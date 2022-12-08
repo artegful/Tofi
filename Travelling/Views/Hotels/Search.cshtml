@@ -1,0 +1,160 @@
+﻿@model IEnumerable<Travelling.Models.HousingOffer>
+@{
+    ViewData["Title"] = "Search results";
+    Layout = null;
+}
+
+@{
+    int carouselIndex = 0;
+}
+
+<div>
+    @{
+        string priceTag = ViewBag.SortType == SortType.Price ? "disabled" : "";
+        string distanceTag = ViewBag.SortType == SortType.Distance ? "disabled" : "";
+    }
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @priceTag"
+       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = SortType.Price })'>
+        Price<i class="fa fa-arrow-down" aria-hidden="true"></i>
+    </a>
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @distanceTag"
+       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = SortType.Distance })'>
+        Distance<i class="fa fa-arrow-down" aria-hidden="true"></i>
+    </a>
+</div>
+
+@foreach (var item in Model)
+{
+    <section class="my-3 hotel-section">
+        <div class="row h-100">
+            <div class="col-md-4">
+                <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
+                    <div class="carousel-inner h-100 w-100 preview">
+                        @if (item.Images.Count > 0)
+                        {
+                            @for (int i = 0; i < item.Images.Count; i++)
+                            {
+                                string tag = i == 0 ? "active" : "";
+
+                                <div class="carousel-item @tag w-100 h-100">
+                                    <img class="preview" src="@item.Images[i].Uri">
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="carousel-item active preview">
+                                <img class="preview" src="/img/placeholder.svg">
+                            </div>
+                        }
+                    </div>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-@(carouselIndex++)" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-md-8 p-5">
+                <div class="row">
+                    <div class="col-8">
+                        <p>@item.Name</p>
+                        <p>@item.Location.Address</p>
+                    </div>
+                    <div class="col-4 justify-content-center">
+                        <div class="row">
+                            <div class="col">
+                                @(item.Price)$
+                            </div>
+                            <div class="col">
+                                @Html.ActionLink(
+                                    "Open",
+                                    "Offer",
+                                    "Hotels",
+                                    new { offerId = item.Id, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople },
+                                    new { @class="btn btn-dark" })
+                            </div>
+                        </div>
+                
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@{
+    string previousTag = ViewBag.Page.HasPreviousPage ? "" : "disabled";
+    string nexTag = ViewBag.Page.HasNextPage ? "" : "disabled";
+}
+
+
+<div class="text-center mb-2">
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @previousTag"
+       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                    departureDate = ViewBag.SearchArgs.DepartureDate,
+                                    amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                    pageNumber = ViewBag.Page.PageNumber - 1,
+                                    sortType = ViewBag.SortType })'>
+
+        <i class="fa fa-angle-left"></i>
+    </a>
+
+    @for (int i = 1; i <= ViewBag.Page.TotalPages; i++)
+    {
+        string currentTag = i == ViewBag.Page.PageNumber ? "disabled" : "";
+
+        <a data-ajax="true"
+           data-ajax-loading="#loading"
+           data-ajax-mode="replace"
+           data-ajax-update="#list"
+           data-ajax-begin="onBegin"
+           class="btn btn-dark @currentTag"
+           href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = i,
+                                        sortType = ViewBag.SortType })'>
+            @i
+        </a>
+    }
+
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @nexTag"
+       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                    departureDate = ViewBag.SearchArgs.DepartureDate,
+                                    amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                    pageNumber = ViewBag.Page.PageNumber + 1,
+                                    sortType = ViewBag.SortType })'>
+        <i class="fa fa-angle-right"></i>
+    </a>
+</div>

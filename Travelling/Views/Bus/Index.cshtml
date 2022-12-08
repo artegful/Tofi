@@ -1,0 +1,40 @@
+﻿@model Travelling.Models.BusSearchArgs
+@{
+    ViewData["Title"] = "Search results";
+}
+
+@addTagHelper *, System.Web.Mvc
+
+<div class="mt-4">
+    @await Html.PartialAsync("BusSearchBar", Model)
+</div>
+
+<a 
+    data-ajax="true"
+    data-ajax-loading="#loading"
+    data-ajax-mode="replace"
+    data-ajax-update="#list"
+    href='@Url.Action("Search", "Bus", new { Model.DepartureLocation, Model.ArriveLocation, Model.DepartureDate })'
+    id="ajax-link">
+</a>
+
+<div id="loading" style="display: none" class="row justify-content-center my-5 p-0">
+    <img src="https://i.gifer.com/origin/b4/b4d657e7ef262b88eb5f7ac021edda87.gif" class="loader"/>
+</div>
+
+<div id="list">
+</div>
+
+@section Scripts {
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjMY0DLNSioZkYPBFmFN0lHpR-pQwO0aM&language=en&libraries=places"></script>
+    <script src="/js/site.js"></script>
+    <script>
+        var invisibleLink = document.getElementById("ajax-link");
+        invisibleLink.click();
+
+        function onBegin() {
+            var list = document.getElementById("list");
+            list.innerHTML = "";
+        }
+    </script>
+}

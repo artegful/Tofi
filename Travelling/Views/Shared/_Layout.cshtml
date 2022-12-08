@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Travelling</title>
+    <link rel="stylesheet" href="~/lib/fullcalendar/main.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Travelling.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light bg-dark" style="z-index: 999">
+            <div class="container">
+                <a class="navbar-brand text-light" asp-action="Index" asp-controller="Home">Travelling</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item p-1">
+                                <a class="nav-link text-light">Hi, @User.Identity.Name</a>
+                            </li>
+                            <li class="nav-item p-1">
+                                <a class="btn text-light btn-outline-secondary" asp-controller="Account" asp-action="Reservations">Reservations</a>
+                            </li>
+                            <li class="nav-item p-1">
+                                <a class="btn text-light btn-outline-secondary" asp-controller="Account" asp-action="Offers">Posts</a>
+                            </li>
+                            <li class="nav-item p-1">
+                                <a class="btn text-light btn-outline-danger" asp-controller="Account" asp-action="Logout">Logout</a>
+                            </li>
+
+                            @if (ViewBag.NotifiedReservations != null)
+                            {
+                                IEnumerable<Reservation> reservations = ViewBag.NotifiedReservations;
+
+                                <li class="nav-item p-1">
+                                    <div class="dropdown btn-group">
+                                        <button type="button" class="btn btn-dark dropdown-toggle" data-bs-toggle="dropdown" id="notification-button">
+                                            <div class="button-with-notification">
+                                                <i class="fa fa-bell"></i>
+                                                
+                                                @if (reservations.Any())
+                                                {
+                                                    <span class="button-badge" id="badge">@reservations.Count()</span>
+                                                }
+                                            </div>
+                                        </button>
+
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        @if (reservations.Any())
+                                        {
+                                            @foreach (var reservation in reservations)
+                                            {
+
+                                                <li class="dropdown-item">your @reservation.Option.Name has been booked for @(reservation.StartDate)-@(reservation.EndDate)</li>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <li class="dropdown-item-text">No new notifications</li>
+                                        }
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-light" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-light" asp-controller="Account" asp-action="Register">Register</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            2022 - Travelling
+        </div>
+    </footer>
+    <script src="/lib/jquery/dist/jquery.js"></script>
+    <script src="/lib/jquery-validation/dist/jquery.validate.js"></script>
+    <script src="/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+    <script src="/lib/bootstrap//dist/js/bootstrap.bundle.js"></script>
+    <script src="/lib/jquery-ajax-unobtrusive/jquery.unobtrusive-ajax.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script>
+        var notificationClearFired = false;
+
+        $(document).ready(function () {
+            $('#notification-button').click(function (e) {
+                if (notificationClearFired) {
+                    return;
+                }
+
+                $.ajax({
+                    type: "GET",
+                    url: '@Url.Action("NotificationsRead", "Home")',
+                    success: function (response) {
+                        notificationClearFired = true;
+                        $('#badge').hide();
+                    }
+                });
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,121 @@
+﻿@model IEnumerable<Travelling.Models.HousingOffer>
+@{
+    ViewData["Title"] = "Your offers";
+}
+
+@{
+    int carouselIndex = 0;
+}
+
+<div class="row my-3 px-2">
+    <h2>Your Posted Offers</h2>
+    @foreach (var item in Model)
+    {
+        <section class="my-3 hotel-section">
+            <div class="row h-100">
+                <div class="col-md-4">
+                    <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
+                        <div class="carousel-inner h-100 w-100 preview">
+                            @if (item.Images.Count > 0)
+                            {
+                                @for (int i = 0; i < item.Images.Count; i++)
+                                {
+                                    string tag = i == 0 ? "active" : "";
+
+                                    <div class="carousel-item @tag w-100 h-100">
+                                        <img class="preview" src="@item.Images[i].Uri">
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="carousel-item active preview">
+                                    <img class="preview" src="/img/placeholder.svg">
+                                </div>
+                            }
+                        </div>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-@(carouselIndex++)" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-8 p-5">
+                    <div class="row">
+                        <div class="col-8">
+                            <p>@item.Name</p>
+                            <p>@item.Location.Address</p>
+                        </div>
+                        <div class="col-4 justify-content-center">
+                            <div class="row">
+                                <div class="col">
+                                    5$
+                                </div>
+                                <div class="col">
+                                    @Html.ActionLink(
+                                        "Open",
+                                        "OfferControl",
+                                        "Hotels",
+                                        new { offerId = item.Id },
+                                        new { @class="btn btn-dark" })
+
+                                    @Html.ActionLink(
+                                        "Edit",
+                                        "Edit",
+                                        "Hotels",
+                                        new { offerId = item.Id },
+                                        new { @class="btn btn-dark" })
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    }
+
+    <div class="my-3">
+        <div id="calendar">
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjMY0DLNSioZkYPBFmFN0lHpR-pQwO0aM&language=en&libraries=places"></script>
+    <script src="/js/site.js"></script>
+
+    <script src="~/lib/fullcalendar/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                eventDidMount: function (info) {
+                    $(info.el).tooltip({ title: info.event.title });
+                },
+                events: [
+                    @foreach (var offer in Model)
+                    {
+                        @foreach (var reservation in offer.Options.SelectMany(option => option.Reservations))
+                        {
+                            @Html.Raw("{start:\'" + reservation.StartDate.ToString("yyyy-MM-dd") + "\'," +
+                            "end:\'" + reservation.EndDate.ToString("yyyy-MM-dd") + "\'," +
+                            "title:\""+ $"{offer.Name}({reservation.Option.Name}) reserved by {reservation.User.Email}({reservation.User.Phone})\"," +
+                            $"url: \'{Url.Action("OptionControl", "Hotels", new { offerId = offer.Id, optionId = reservation.Option.Id })}\'}},")
+                        }
+                    }
+                    ]
+            });
+            calendar.render();
+        });
+    </script>
+}

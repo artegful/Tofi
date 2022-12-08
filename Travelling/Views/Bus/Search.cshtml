@@ -1,0 +1,141 @@
+﻿@model IEnumerable<Travelling.Models.TripOffer>
+@{
+    ViewData["Title"] = "Bus search results";
+    Layout = null;
+}
+
+@{
+    int carouselIndex = 0;
+}
+
+<div>
+    @{
+        string priceTag = ViewBag.SortType == SortType.Price ? "disabled" : "";
+        string timeTag = ViewBag.SortType == SortType.Time ? "disabled" : "";
+    }
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @priceTag"
+       href='@Url.Action("Search", "Bus", new { pageNumber = ViewBag.Page.PageNumber,
+            sortType = SortType.Price})'>
+        Price<i class="fa fa-arrow-down" aria-hidden="true"></i>
+    </a>
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @timeTag"
+       href='@Url.Action("Search", "Bus", new { pageNumber = ViewBag.Page.PageNumber,
+            sortType = SortType.Price})'>
+        Time<i class="fa fa-arrow-down" aria-hidden="true"></i>
+    </a>
+</div>
+
+@foreach (var item in Model)
+{
+    <section class="my-3 hotel-section">
+        <div class="row h-100 p-3">
+            <div class="col-10">
+                @{
+                    Dictionary<TripType, string> typeToString = new Dictionary<TripType, string>()
+                    {
+                        {TripType.Plane, "fa-plane"},
+                        {TripType.Bus, "fa-bus"},
+                        {TripType.Water, "fa-ship"},
+                        {TripType.Suburban, "fa-train"},
+                        {TripType.Train, "fa-train"},
+                        {TripType.Helicopter, "fa-helicopter"}
+                    };
+
+                    string faTag = typeToString[item.TripType];
+                }
+                <p>
+                    <i class="fa @faTag"></i>@item.Name
+                </p>
+
+                <div class="row">
+                    <div class="col">
+                        <p>@item.DepartureDate</p>
+                        <p>@item.DepartureLocation.Address</p>
+                    </div>
+                    <div class="col">
+                        <p>@((item.ArrivalDate - item.DepartureDate).ToString())</p>
+                    </div>
+                    <div class="col">
+                        <p>@item.ArrivalDate</p>
+                        <p>@item.ArrivalLocation.Address</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2 justify-content-center">
+                <div class="row">
+                    <div class="col">
+                        @(item.Price)RUB
+                    </div>
+                    <div class="col">
+                        @Html.ActionLink(
+                            "Open",
+                            "Trip",
+                            "Bus",
+                            new { },
+                            new { @class="btn btn-dark" })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@{
+    string previousTag = ViewBag.Page.HasPreviousPage ? "" : "disabled";
+    string nexTag = ViewBag.Page.HasNextPage ? "" : "disabled";
+}
+
+
+<div class="text-center mb-2">
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @previousTag"
+       href='@Url.Action("Search", "Bus", new {
+                                    pageNumber = ViewBag.Page.PageNumber - 1,
+                                    sortType = ViewBag.SortType })'>
+
+        <i class="fa fa-angle-left"></i>
+    </a>
+
+    @for (int i = 1; i <= ViewBag.Page.TotalPages; i++)
+    {
+        string currentTag = i == ViewBag.Page.PageNumber ? "disabled" : "";
+
+        <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @currentTag"
+       href='@Url.Action("Search", "Bus", new {
+                                        pageNumber = i,
+                                        sortType = ViewBag.SortType })'>
+            @i
+        </a>
+    }
+
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @nexTag"
+       href='@Url.Action("Search", "Bus", new {
+                                    pageNumber = ViewBag.Page.PageNumber + 1,
+                                    sortType = ViewBag.SortType })'>
+        <i class="fa fa-angle-right"></i>
+    </a>
+</div>

@@ -1,0 +1,28 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@model Travelling.Models.LoginModel
+
+<div class="my-4">
+    <form asp-action="Login" asp-controller="Account" asp-anti-forgery="true">
+        <div class="validation" asp-validation-summary="ModelOnly"></div>
+        <h2>Login</h2>
+        <div class="form-outline mb-4">
+            <label class="form-label" asp-for="Email">Email address</label>
+            <input type="email" asp-for="Email" class="form-control" />
+        </div>
+
+        <div class="form-outline mb-4">
+            <label class="form-label" asp-for="Password">Password</label>
+            <input type="password" asp-for="Password" class="form-control" />
+        </div>
+
+        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+        <button type="submit" class="btn btn-primary btn-block mb-4">Login</button>
+
+        <div class="text-center">
+            <p>Not a member? <a asp-controller="Account" asp-action="Register">Register</a></p>
+        </div>
+    </form>
+</div>
