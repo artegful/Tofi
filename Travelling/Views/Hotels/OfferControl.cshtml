@@ -156,7 +156,7 @@
                     $(info.el).tooltip({ title: info.event.title });
                 },
                 events: [
-                        @foreach (var reservation in Model.Options.SelectMany(option => option.Reservations))
+                        @foreach (var reservation in Model.Options.SelectMany(option => option.VerifiedReservations))
                         {
                             @Html.Raw("{start:\'" + reservation.StartDate.ToString("yyyy-MM-dd") + "\'," +
                                 "end:\'" + reservation.EndDate.ToString("yyyy-MM-dd") + "\'," +

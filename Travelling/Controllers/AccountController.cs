@@ -6,6 +6,7 @@ using Travelling.Models;
 using Travelling.Services;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Data;
 
 namespace Travelling.Controllers
 {
@@ -32,7 +33,7 @@ namespace Travelling.Controllers
         {
             if (ModelState.IsValid)
             {
-                UserViewModel user = await database.GetUser(model.Email);
+                User user = await database.GetUser(model.Email);
                 if (user != null)
                 {
                     await Authenticate(model.Email);
@@ -62,11 +63,11 @@ namespace Travelling.Controllers
         {
             if (ModelState.IsValid)
             {
-                UserViewModel user = await database.GetUser(model.Email);
+                User user = await database.GetUser(model.Email);
 
                 if (user == null)
                 {
-                    UserViewModel userViewModel = new UserViewModel(model);
+                    User userViewModel = new User(model);
 
                     await database.Save(userViewModel);
                     await Authenticate(model.Email);
@@ -105,18 +106,21 @@ namespace Travelling.Controllers
         [Authorize]
         public async Task<IActionResult> Reservations()
         {
-            UserViewModel user = (await database.GetUser(User.Identity.Name));
+            User user = (await database.GetUser(User.Identity.Name));
             IEnumerable<Reservation> reservations = (await database.GetHousings())
-                .SelectMany(offer => offer.Options).SelectMany(option => option.Reservations)
-                .Where(reservation => reservation.UserId == user.Id);
+                .SelectMany(offer => offer.Options).SelectMany(option => option.VerifiedReservations)
+                .Where(reservation => reservation.UserId == user.Id && reservation.StartDate >= DateTime.Today);
 
-            return View(reservations);
+            IEnumerable<TripReservation> tripReservations = await database.GetTripReservations(user.Id.Value);
+            ViewBag.DocumentTypesDict = await database.GetDocumentDict();
+
+            return View((reservations, tripReservations));
         }
 
         [Authorize]
         public async Task<IActionResult> Offers()
         {
-            UserViewModel user = (await database.GetUser(User.Identity.Name));
+            User user = (await database.GetUser(User.Identity.Name));
 
             IEnumerable<HousingOffer> postedOffers = (await database.GetHousings())
                 .Where(offer => offer.OwnerId == user.Id);

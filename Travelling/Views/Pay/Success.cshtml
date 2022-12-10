@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Success checkout";
+}
+
+<div class="container my-5 text-center">
+    <p>
+        We appreciate your business! Your reservation will be added as soon as the purchase is verified
+    </p>
+
+    @Html.ActionLink(
+    "See your reservations",
+    "Reservations",
+    "Account",
+    new { },
+    new { @class="btn btn-dark my-5" })
+</div>

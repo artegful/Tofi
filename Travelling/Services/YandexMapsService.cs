@@ -11,10 +11,12 @@ namespace Travelling.Services
         private const int SEARCH_RADIUS = 50;
 
         private readonly HttpClient client;
+        private readonly GoogleMapsService googleMapsService;
 
-        public YandexMapsService()
+        public YandexMapsService(GoogleMapsService googleMapsService)
         {
             client = new HttpClient();
+            this.googleMapsService = googleMapsService;
         }
 
         public async Task<Location> GetClosestSettlement(Location coordinates)
@@ -52,31 +54,53 @@ namespace Travelling.Services
             JsonNode root = JsonObject.Parse(jsonResult);
 
             JsonArray segments = (JsonArray)root["segments"];
+            List<TripThread> threads = new List<TripThread>();
             List<TripOffer> result = new List<TripOffer>(segments.Count);
 
             foreach (JsonObject trip in segments)
             {
+                string threadId = (string)trip["thread"]["uid"];
+                TripThread? tripThread = threads.FirstOrDefault(th => th.ApiId == threadId);
+
+                if (tripThread == null)
+                {
+                    tripThread = new TripThread()
+                    {
+                        ApiId = threadId,
+                        Name = (string)trip["thread"]["title"],
+                        Type = Enum.Parse<TripType>((string)trip["thread"]["transport_type"], true)
+                    };
+
+                    threads.Add(tripThread);
+                }
+
+                string departureAddress = (string)trip["from"]["title"];
+                string arrivalAddress = (string)trip["to"]["title"];
+
+                Task<(Location, string?)> departureTask = googleMapsService.GetLocationByAddress(departureAddress);
+                Task<(Location, string?)> arrivalTask = googleMapsService.GetLocationByAddress(arrivalAddress);
+
+                await Task.WhenAll(departureTask, arrivalTask);
 
                 TripOffer item = new TripOffer()
                 {
-                    Name = (string)trip["thread"]["title"],
                     DepartureLocation = new Location()
                     {
                         Address = (string)trip["from"]["title"],
-                        Latitude = departure.Latitude,
-                        Longitude = departure.Longitude,
+                        Latitude = departureTask.Result.Item1.Latitude,
+                        Longitude = departureTask.Result.Item1.Longitude,
                         Code = (string)trip["from"]["code"]
                     },
                     ArrivalLocation = new Location()
                     {
                         Address = (string)trip["to"]["title"],
-                        Latitude = arrival.Latitude,
-                        Longitude = arrival.Longitude,
+                        Latitude = arrivalTask.Result.Item1.Latitude,
+                        Longitude = arrivalTask.Result.Item1.Longitude,
                         Code = (string)trip["to"]["code"]
                     },
                     DepartureDate = DateTime.Parse((string)trip["departure"]),
                     ArrivalDate = DateTime.Parse((string)trip["arrival"]),
-                    TripType = Enum.Parse<TripType>((string)trip["transport_type"], true)
+                    TripThread = tripThread
                 };
 
                 if (trip["tickets_info"] != null && trip["tickets_info"]["places"] is JsonArray places && places.Count > 0 &&

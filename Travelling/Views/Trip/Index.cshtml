@@ -1,4 +1,4 @@
-﻿@model Travelling.Models.BusSearchArgs
+﻿@model Travelling.Models.TripSearchArgs
 @{
     ViewData["Title"] = "Search results";
 }
@@ -6,7 +6,7 @@
 @addTagHelper *, System.Web.Mvc
 
 <div class="mt-4">
-    @await Html.PartialAsync("BusSearchBar", Model)
+    @await Html.PartialAsync("TripSearchBar", Model)
 </div>
 
 <a 
@@ -14,7 +14,7 @@
     data-ajax-loading="#loading"
     data-ajax-mode="replace"
     data-ajax-update="#list"
-    href='@Url.Action("Search", "Bus", new { Model.DepartureLocation, Model.ArriveLocation, Model.DepartureDate })'
+    href='@Url.Action("Search", "Trip", new { Model.DepartureLocation, Model.ArriveLocation, Model.DepartureDate })'
     id="ajax-link">
 </a>
 

@@ -1,8 +1,11 @@
-﻿using Microsoft.VisualBasic;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.VisualBasic;
 using System;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Xml.Linq;
 using Travelling.Models;
 
@@ -19,9 +22,9 @@ namespace Travelling.Services
         public Database(GoogleMapsService googleMapsService)
         {
             builder = new SqlConnectionStringBuilder();
-            builder.DataSource = "localhost";
-            builder.UserID = "root";
-            builder.Password = "root";
+            builder.DataSource = "34.155.166.253";
+            builder.UserID = "sqlserver";
+            builder.Password = "A~MM(%F9r<->Rc(<";
             builder.InitialCatalog = "project";
             builder.MultipleActiveResultSets = true;
             connection = new SqlConnection(builder.ConnectionString);
@@ -31,10 +34,10 @@ namespace Travelling.Services
         }
 
 
-        public async Task<List<UserViewModel>> GetUsers()
+        public async Task<List<User>> GetUsers()
         {
             string sql = "Select Id, Email, Password, Name, Surname, Phone from dbo.Users";
-            List<UserViewModel> result = new List<UserViewModel>();
+            List<User> result = new List<User>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
@@ -42,7 +45,7 @@ namespace Travelling.Services
                 {
                     while (reader.Read())
                     {
-                        UserViewModel offer = new UserViewModel()
+                        User offer = new User()
                         {
                             Id = reader.GetInt32(0),
                             Email = reader.GetString(1),
@@ -60,10 +63,10 @@ namespace Travelling.Services
             return result;
         }
 
-        public async Task<UserViewModel> GetUser(string email)
+        public async Task<User> GetUser(string email)
         {
             string sql = $"Select Id, Email, Password, Name, Surname, Phone from dbo.Users where Email=\'{email}\'";
-            List<UserViewModel> result = new List<UserViewModel>();
+            List<User> result = new List<User>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
@@ -71,7 +74,7 @@ namespace Travelling.Services
                 {
                     reader.Read();
 
-                    UserViewModel user = new UserViewModel()
+                    User user = new User()
                     {
                         Id = reader.GetInt32(0),
                         Email = reader.GetString(1),
@@ -86,10 +89,10 @@ namespace Travelling.Services
             }
         }
 
-        public async Task<UserViewModel> GetUser(int id)
+        public async Task<User> GetUser(int id)
         {
             string sql = $"Select Id, Email, Password, Name, Surname, Phone from dbo.Users where Id={id}";
-            List<UserViewModel> result = new List<UserViewModel>();
+            List<User> result = new List<User>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
@@ -97,7 +100,7 @@ namespace Travelling.Services
                 {
                     reader.Read();
 
-                    UserViewModel user = new UserViewModel()
+                    User user = new User()
                     {
                         Id = reader.GetInt32(0),
                         Email = reader.GetString(1),
@@ -110,6 +113,32 @@ namespace Travelling.Services
                     return user;
                 }
             }
+        }
+
+        public async Task<SelectList> GetDocumentTypes()
+        {
+            var dict = await GetDocumentDict();
+            
+            return new SelectList(dict.Select(pair => new { id = pair.Key, name = pair.Value }), "id", "name");
+        }
+
+        public async Task<Dictionary<int, string>> GetDocumentDict()
+        {
+            string sql = "select id, name from dbo.DocumentTypes";
+
+            var result = new Dictionary<int, string>();
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        result[reader.GetInt32(0)] = reader.GetString(1);
+                    }
+                }
+            }
+
+            return result;
         }
 
         public async Task<List<HousingOffer>> GetHousings()
@@ -158,8 +187,8 @@ namespace Travelling.Services
                     }
                 }
 
-                item.Options = await GetHousingOptions(item, connection);
-                item.Location = await GetLocation(item.LocationId, connection);
+                item.Options = await GetHousingOptions(item);
+                item.Location = await GetLocation(item.LocationId);
             }
 
             return housings;
@@ -206,10 +235,219 @@ namespace Travelling.Services
                 }
             }
 
-            result.Options = await GetHousingOptions(result, connection);
-            result.Location = await GetLocation(result.LocationId, connection);
+            result.Options = await GetHousingOptions(result);
+            result.Location = await GetLocation(result.LocationId);
 
             return result;
+        }
+
+        public async Task<TripOffer> GetTripOffer(int id)
+        {
+            string sql = @$"
+                    SELECT [Id]
+                          ,[DepartureDateTime]
+                          ,[ArrivalDateTime]
+                          ,[Price]
+                          ,[ThreadId]
+                          ,[DepartureLocationId]
+                          ,[ArrivalLocationId]
+                      FROM [dbo].[TripOffers] where Id={id}";
+
+            SqlCommand command = new SqlCommand(sql, connection);
+
+            TripOffer result;
+            int? threadId;
+            int? departureLocationId;
+            int? arrivalLocationId;
+
+            using (SqlDataReader reader = await command.ExecuteReaderAsync())
+            {
+                reader.Read();
+
+                result = new TripOffer()
+                {
+                    Id = reader.GetInt32(0),
+                    DepartureDate = reader.GetDateTime(1),
+                    ArrivalDate = reader.GetDateTime(2),
+                    Price = reader.IsDBNull(3) ? null : reader.GetDecimal(3)
+                };
+
+                threadId = reader.GetInt32(4);
+                departureLocationId = reader.GetInt32(5);
+                arrivalLocationId = reader.GetInt32(6);
+            }
+
+            result.DepartureLocation = await GetLocation(departureLocationId.Value);
+            result.ArrivalLocation = await GetLocation(arrivalLocationId.Value);
+            result.TripThread = await GetThread(threadId.Value);
+
+            return result;
+        }
+
+        public async Task<TripThread> GetThread(int id)
+        {
+            string sql = $@"
+            SELECT [Id]
+                  ,[Name]
+                  ,[TransportType]
+                  ,[ApiId]
+              FROM [dbo].[TripThreads]";
+
+            SqlCommand command = new SqlCommand(sql, connection);
+            using (SqlDataReader reader = await command.ExecuteReaderAsync())
+            {
+                reader.Read();
+
+                return new TripThread()
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Type = (TripType)reader.GetInt32(2),
+                    ApiId = reader.IsDBNull(3) ? null : reader.GetString(3)
+                };
+            }
+        }
+
+        public async Task<IEnumerable<TripReservation>> GetTripReservations(int ownerId)
+        {
+            string selectReservation = @$"SELECT [Id]
+              ,[TripId]
+          FROM [dbo].[TripReservations] where OwnerId = {ownerId}";
+
+            User owner = await GetUser(ownerId);
+
+            List<TripReservation> reservations = new List<TripReservation>();
+            SqlCommand command = new SqlCommand(selectReservation, connection);
+            using (SqlDataReader reader = await command.ExecuteReaderAsync())
+            {
+                while (reader.Read())
+                {
+                    int id = reader.GetInt32(0);
+                    int tripId = reader.GetInt32(1);
+
+                    TripReservation reservation = new TripReservation()
+                    {
+                        Id = id,
+                        Owner = owner,
+                        TripOffer = await GetTripOffer(tripId),
+                        Passengers = new List<Passenger>()
+                    };
+
+                    string sql = @$"SELECT [Id]
+                      ,[Name]
+                      ,[Surname]
+                      ,[MiddleName]
+                      ,[DocumentCode]
+                      ,[BirthDate]
+                      ,[DocumentTypeId]
+                  FROM [dbo].[PassengerInfos] where tripReservationId = {id}";
+
+                    SqlCommand passengerCommand = new SqlCommand(sql, connection);
+                    using (SqlDataReader passengerReader = await passengerCommand.ExecuteReaderAsync())
+                    {
+                        while (passengerReader.Read())
+                        {
+                            reservation.Passengers.Add(new Passenger()
+                            {
+                                Id = passengerReader.GetInt32(0),
+                                Name = passengerReader.GetString(1),
+                                Surname = passengerReader.GetString(2),
+                                MiddleName = passengerReader.GetString(3),
+                                DocumentCode = passengerReader.GetString(4),
+                                BirthDate = passengerReader.GetDateTime(5),
+                                DocumentType = passengerReader.GetInt32(6)
+                            });
+                        }
+                    }
+
+                    reservations.Add(reservation);
+                }
+            }
+
+            return reservations;
+        }
+
+        public async Task<TripReservation> GetTripReservation(int id)
+        {
+            string selectReservation = @$"SELECT [OwnerId]
+              ,[TripId]
+          FROM [dbo].[TripReservations] where Id = {id}";
+
+            TripReservation reservation = null;
+            SqlCommand command = new SqlCommand(selectReservation, connection);
+            using (SqlDataReader reader = await command.ExecuteReaderAsync())
+            {
+                reader.Read();
+
+                int ownerId = reader.GetInt32(0);
+                int tripId = reader.GetInt32(1);
+
+                User owner = await GetUser(ownerId);
+
+                reservation = new TripReservation()
+                {
+                    Id = id,
+                    Owner = owner,
+                    TripOffer = await GetTripOffer(tripId),
+                    Passengers = new List<Passenger>()
+                };
+
+                string sql = @$"SELECT [Id]
+                    ,[Name]
+                    ,[Surname]
+                    ,[MiddleName]
+                    ,[DocumentCode]
+                    ,[BirthDate]
+                    ,[DocumentTypeId]
+                FROM [dbo].[PassengerInfos] where tripReservationId = {id}";
+
+                SqlCommand passengerCommand = new SqlCommand(sql, connection);
+                using (SqlDataReader passengerReader = await passengerCommand.ExecuteReaderAsync())
+                {
+                    while (passengerReader.Read())
+                    {
+                        reservation.Passengers.Add(new Passenger()
+                        {
+                            Id = passengerReader.GetInt32(0),
+                            Name = passengerReader.GetString(1),
+                            Surname = passengerReader.GetString(2),
+                            MiddleName = passengerReader.GetString(3),
+                            DocumentCode = passengerReader.GetString(4),
+                            BirthDate = passengerReader.GetDateTime(5),
+                            DocumentType = passengerReader.GetInt32(6)
+                        });
+                    }
+                }
+            }
+
+            return reservation;
+        }
+
+        public async Task<UnverifiedReservation> GetReservationRequest(string sessionId)
+        {
+            string sql = $@"
+SELECT [OwnerId]
+      ,[OptionId]
+      ,[ArriveDate]
+      ,[DepartureDate]
+  FROM [dbo].[UnverifiedReservations] where SessionId='{sessionId}'";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    reader.Read();
+
+                    return new UnverifiedReservation()
+                    {
+                        SessionId = sessionId,
+                        OwnerId = reader.GetInt32(0),
+                        HousingOptionId = reader.GetInt32(1),
+                        StartDate = reader.GetDateTime(2),
+                        EndDate = reader.GetDateTime(3)
+                    };
+                }
+            }
         }
 
         public async Task Save(IEnumerable<HousingOffer> offers)
@@ -247,7 +485,7 @@ namespace Travelling.Services
             }
         }
 
-        public async Task Save(UserViewModel userViewModel)
+        public async Task Save(User userViewModel)
         {
             string sql = "insert into dbo.Users(Email, Password, Name, Surname, Phone) " +
                 $"values (\'{userViewModel.Email}\', \'{userViewModel.Password}\', " +
@@ -260,14 +498,85 @@ namespace Travelling.Services
             }
         }
 
-        public async Task Save(Reservation reservation)
+        public async Task Save(TripReservation reservation)
+        {
+            string insertSql = $"insert into dbo.TripReservations(OwnerId, TripId) values " +
+                $"({reservation.Owner.Id}, {reservation.TripOffer.Id});select scope_identity();";
+
+            using (SqlCommand command = new SqlCommand(insertSql, connection))
+            {
+                reservation.Id = (int)(decimal)await command.ExecuteScalarAsync();
+            }
+
+            foreach (var passenger in reservation.Passengers)
+            {
+                await Save(reservation, passenger);
+            }
+        }
+
+        public async Task SaveReservationRequest(UnverifiedReservation reservation)
+        {
+            string dateFormat = "yyyy-MM-dd";
+
+            string sql = @$"
+INSERT INTO [dbo].[UnverifiedReservations]
+           ([SessionId]
+           ,[OwnerId]
+           ,[OptionId]
+           ,[ArriveDate]
+           ,[DepartureDate])
+     VALUES
+           ('{reservation.SessionId}'
+           ,{reservation.OwnerId}
+           ,{reservation.HousingOptionId}
+           ,'{reservation.StartDate.ToString(dateFormat)}'
+           ,'{reservation.EndDate.ToString(dateFormat)}')";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task Save(TripReservation tripReservation, Passenger passenger)
         {
             string dateFormat = "yyyy-MM-d";
 
-            string sql = "insert into dbo.Reservations(StartDate, EndDate, UserId, HousingOptionId) values " +
+            string insertSql = @$"
+INSERT INTO [dbo].[PassengerInfos]
+           ([TripReservationId]
+           ,[DocumentTypeId]
+           ,[Name]
+           ,[Surname]
+           ,[MiddleName]
+           ,[DocumentCode]
+           ,[BirthDate])
+     VALUES
+           ({tripReservation.Id}
+           ,{(int)passenger.DocumentType}
+           ,'{passenger.Name}'
+           ,'{passenger.Surname}'
+           ,'{passenger.MiddleName}'
+           ,'{passenger.DocumentCode}'
+           ,'{passenger.BirthDate.ToString(dateFormat)}');";
+
+            using (SqlCommand command = new SqlCommand(insertSql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task Save(Reservation reservation)
+        {
+            string dateFormat = "yyyy-MM-d";
+            string sessionId = reservation.SessionId ?? "NULL";
+
+            string sql = "insert into dbo.Reservations(StartDate, EndDate, UserId, HousingOptionId, SessionId, IsVerified) values " +
                             $"(\'{reservation.StartDate.ToString(dateFormat)}\', " +
                             $"\'{reservation.EndDate.ToString(dateFormat)}\', " +
-                            $"{reservation.UserId}, {reservation.Option.Id}); " +
+                            $"{reservation.UserId}, {reservation.Option.Id}," +
+                            $"\'{sessionId}\'," +
+                            $"{(reservation.IsVerified ? 1 : 0)}); " +
                             "select scope_identity()";
 
             using (SqlCommand command = new SqlCommand(sql, connection))
@@ -285,6 +594,26 @@ namespace Travelling.Services
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
                 notification.Id = (int)(decimal)await command.ExecuteScalarAsync();
+            }
+        }
+
+        public async Task Delete(Reservation reservation)
+        {
+            string sql = $"delete from dbo.Reservations where id = {reservation.Id}";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task Delete(HousingOffer offer)
+        {
+            string sql = $"delete from dbo.HousingOffers where id = {offer.Id}";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
             }
         }
 
@@ -420,7 +749,7 @@ namespace Travelling.Services
             }
         }
 
-        private async Task<List<HousingOption>> GetHousingOptions(HousingOffer offer, SqlConnection connection)
+        private async Task<List<HousingOption>> GetHousingOptions(HousingOffer offer)
         {
             string optionsSql = $"SELECT Id, ApiId, Name, Description, Price, BedsAmount, MetersAmount " +
                 $"FROM dbo.HousingOptions where HousingId={offer.Id.Value}";
@@ -463,7 +792,7 @@ namespace Travelling.Services
                     }
                 }
 
-                string reservationSql = $"select Id, StartDate, EndDate, UserId from dbo.Reservations where housingOptionId = {item.Id}";
+                string reservationSql = $"select Id, StartDate, EndDate, UserId, SessionId, IsVerified from dbo.Reservations where housingOptionId = {item.Id}";
                 SqlCommand reservationsCommand = new SqlCommand(reservationSql, connection);
 
                 using (SqlDataReader reservationReader = await reservationsCommand.ExecuteReaderAsync())
@@ -476,6 +805,8 @@ namespace Travelling.Services
                             StartDate = reservationReader.GetDateTime(1),
                             EndDate = reservationReader.GetDateTime(2),
                             UserId = reservationReader.GetInt32(3),
+                            SessionId = reservationReader.GetString(4),
+                            IsVerified = reservationReader.GetBoolean(5),
                             Option = item
                         });
                     }
@@ -485,7 +816,30 @@ namespace Travelling.Services
             return results;
         }
 
-        private async Task<Location> GetLocation(int id, SqlConnection connection)
+        public async Task<bool> FilterOptions(int optionId, DateTime arrive, DateTime departure)
+        {
+            string dateFormat = "yyyy-MM-dd";
+
+            string checkPendingRequestSql = @$"select count(*) from dbo.UnverifiedReservations where HousingOptionId = {optionId} " +
+                $"and ArriveDate = '{arrive.ToString(dateFormat)}' and DepartureDate='{departure.ToString(dateFormat)}'";
+
+            using (SqlCommand eraseCommand = new SqlCommand(checkPendingRequestSql, connection))
+            {
+                return ((int) await eraseCommand.ExecuteScalarAsync()) > 0;
+            }
+        }
+
+        public async Task EraseTripReservation(int id)
+        {
+            string sql = $"delete from dbo.TripReservations where Id = {id}";
+
+            using(SqlCommand eraseCommand = new SqlCommand(sql, connection))
+            {
+                await eraseCommand.ExecuteNonQueryAsync();
+            }
+        }
+
+        private async Task<Location> GetLocation(int id)
         {
             string optionsSql = $"SELECT Address, Latitude, Longitude FROM dbo.Locations where Id={id}";
             SqlCommand locationReader = new SqlCommand(optionsSql, connection);
@@ -500,6 +854,90 @@ namespace Travelling.Services
                     Latitude = (float)dataReader.GetDouble(1),
                     Longitude = (float)dataReader.GetDouble(2)
                 };
+            }
+        }
+
+        public async Task Save(IEnumerable<TripOffer> offers)
+        {
+            foreach (var offer in offers)
+            {
+                await Save(offer.TripThread);
+
+                await Save(offer.DepartureLocation);
+                await Save(offer.ArrivalLocation);
+
+                string dateFormat = "yyyy-MM-d HH:mm:ss";
+                string sql = $"select count(*) from dbo.TripOffers where ArrivalDateTime = \'{offer.ArrivalDate.ToString(dateFormat)}\' " +
+                    $"and ThreadId = {offer.TripThread.Id}";
+
+                using (SqlCommand command = new SqlCommand(sql, connection))
+                {
+                    int count = (int)command.ExecuteScalar();
+
+                    if (count > 0)
+                    {
+                        string idQuery = $"select Id from dbo.TripOffers where ArrivalDateTime = '{offer.ArrivalDate.ToString(dateFormat)}' " +
+                            $"and ThreadId = {offer.TripThread.Id}";
+
+                        using (SqlCommand idCommand = new SqlCommand(idQuery, connection))
+                        {
+                            offer.Id = (int)await idCommand.ExecuteScalarAsync();
+                        }
+                    }
+                    else
+                    {
+                        string query = @$"INSERT INTO [dbo].[TripOffers]
+                                   ([DepartureLocationId]
+                                   ,[ArrivalLocationId]
+                                   ,[DepartureDateTime]
+                                   ,[ArrivalDateTime]
+                                   ,[Price]
+                                   ,[ThreadId])
+                             VALUES
+                                   ({offer.DepartureLocation.Id}
+                                   ,{offer.ArrivalLocation.Id}
+                                   ,'{offer.DepartureDate.ToString(dateFormat)}'
+                                   ,'{offer.ArrivalDate.ToString(dateFormat)}'
+                                   ,{(offer.Price.HasValue ? offer.Price : "NULL")}
+                                   ,{offer.TripThread.Id});" +
+                            "Select scope_identity()";
+
+                        using (SqlCommand insertCommand = new SqlCommand(query, connection))
+                        {
+                            offer.Id = (int)(decimal)await insertCommand.ExecuteScalarAsync();
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task Save(TripThread thread)
+        {
+            string sql = $"select count(*) from dbo.TripThreads where apiId = \'{thread.ApiId}\'";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                int count = (int)command.ExecuteScalar();
+
+                if (count > 0)
+                {
+                    string idQuery = $"select Id from dbo.TripThreads where apiId = '{thread.ApiId}'";
+
+                    using (SqlCommand idCommand = new SqlCommand(idQuery, connection))
+                    {
+                        thread.Id = (int)await idCommand.ExecuteScalarAsync();
+                    }
+                }
+                else
+                {
+                    string query = $"insert into dbo.TripThreads(apiId, Name, TransportType) values (\'{thread.ApiId}\', \'{thread.Name}\', {(int)thread.Type});" +
+                                    "Select scope_identity()";
+
+                    using (SqlCommand insertCommand = new SqlCommand(query, connection))
+                    {
+                        thread.Id = (int)(decimal)await insertCommand.ExecuteScalarAsync();
+                    }
+                }
             }
         }
 

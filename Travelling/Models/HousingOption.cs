@@ -12,6 +12,11 @@
         public int MetersAmount { get; set; }
         public HousingOffer Offer { get; set; }
         public List<Reservation> Reservations { get; set; } = new List<Reservation>();
+        public bool HasIdenticalPendingRequest { get; set; }
+
+        public IEnumerable<Reservation> VerifiedReservations => Reservations.Where(r => r.IsVerified);
+
+        public decimal BookingPrice => Math.Max(0.5M, Price / 50);
 
         public bool IsAvailable(SearchArgs args)
         {

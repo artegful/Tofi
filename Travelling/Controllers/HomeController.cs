@@ -53,7 +53,7 @@ namespace Travelling.Controllers
         {
             if (User.Identity != null)
             {
-                UserViewModel user = await database.GetUser(User.Identity.Name);
+                User user = await database.GetUser(User.Identity.Name);
                 IEnumerable<Reservation> reservations = (await database.GetHousings()).Where(offer => offer.OwnerId == user.Id)
                     .SelectMany(offer => offer.Options).SelectMany(option => option.Reservations);
 
@@ -71,7 +71,12 @@ namespace Travelling.Controllers
 
         private async Task UpdateNotifications()
         {
-            UserViewModel user = (await database.GetUser(User.Identity.Name));
+            if (User.Identity?.Name == null)
+            {
+                return;
+            }
+
+            User user = (await database.GetUser(User.Identity.Name));
             IEnumerable<Reservation> reservations = (await database.GetHousings()).Where(offer => offer.OwnerId == user.Id)
                 .SelectMany(offer => offer.Options).SelectMany(option => option.Reservations);
 

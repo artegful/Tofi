@@ -108,7 +108,7 @@
                             <div class="col-4 justify-content-center">
                                 <div class="row">
                                     <div class="col">
-                                        5$
+                                        @(option.Price == 0 ? "Free" : $"{option.Price}$")
                                     </div>
                                     <div class="col">
                                         @Html.ActionLink(
@@ -142,8 +142,9 @@
         let map;
 
         function initMap() {
-            let pos = { lat: @Model.Location.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture), 
-                        lng: @Model.Location.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+            let pos = {
+                lat: @Model.Location.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                lng: @Model.Location.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture) }
 
             map = new google.maps.Map(document.getElementById("map"), {
                 center: pos,

@@ -86,6 +86,7 @@ namespace Travelling.Controllers
 
             ViewBag.SearchArgs = args;
             ViewBag.Page = page;
+            ViewBag.PageNumber = pageNumber - 1;
             ViewBag.SortType = sortType;
             return View(cutOffers);
         }
@@ -145,11 +146,24 @@ namespace Travelling.Controllers
         {
             HousingOffer offer = await database.GetOffer(offerId);
             HousingOption option = offer.Options.First(o => o.Id == optionId);
-            UserViewModel user = (await database.GetUser(User.Identity.Name));
+            User user = (await database.GetUser(User.Identity.Name));
 
             if (!option.IsAvailable(args))
             {
                 return RedirectToAction("Error", "Home");
+            }
+
+            if (option.Price != 0)
+            {
+                return RedirectToAction("Checkout", "Pay",
+                    new
+                    {
+                        offerId,
+                        optionId,
+                        arriveDate = args.ArriveDate,
+                        departureDate = args.DepartureDate,
+                        amountOfPeople = args.AmountOfPeople
+                    });
             }
 
             Reservation reservation = new Reservation()
@@ -157,7 +171,8 @@ namespace Travelling.Controllers
                 StartDate = args.ArriveDate,
                 EndDate = args.DepartureDate,
                 Option = option,
-                UserId = user.Id.Value
+                UserId = user.Id.Value,
+                IsVerified = true
             };
 
             ReservationNotification notification = new ReservationNotification()
@@ -180,7 +195,7 @@ namespace Travelling.Controllers
         [Authorize]
         public async Task<IActionResult> Edit(int offerId)
         {
-            UserViewModel user = await database.GetUser(User.Identity.Name);
+            User user = await database.GetUser(User.Identity.Name);
             HousingOffer offer = await database.GetOffer(offerId);
 
             //if (user.Id != offer.OwnerId)
@@ -247,7 +262,7 @@ namespace Travelling.Controllers
         {
             Task<(Location, string?)> searchLocation = googleMapsService.GetLocationByAddress(model.Location);
             List<Image> images = new List<Image>();
-            Task<UserViewModel> user = database.GetUser(User.Identity.Name);
+            Task<User> user = database.GetUser(User.Identity.Name);
 
             if (model.Images != null)
             {

@@ -1,70 +1,183 @@
-﻿@model IEnumerable<Travelling.Models.Reservation>
+﻿@model (IEnumerable<Travelling.Models.Reservation>, IEnumerable<TripReservation>)
 @{
     ViewData["Title"] = "Search results";
     int carouselIndex = 1;
 }
 
-@foreach (var item in Model)
-{
-    <section class="my-3 option-section">
-        <div class="row h-100">
-            <div class="col-md-3">
-                <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
-                    <div class="carousel-inner h-100 w-100">
-                        @if (item.Option.Images.Count > 0)
-                        {
-                            @for (int i = 0; i < item.Option.Images.Count; i++)
+<div class="my-4">
+    <h3>Lodging Reservations</h3>
+    @foreach (var item in Model.Item1)
+    {
+        <section class="my-3 option-section">
+            <div class="row h-100">
+                <div class="col-md-3">
+                    <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
+                        <div class="carousel-inner h-100 w-100">
+                            @if (item.Option.Images.Count > 0)
                             {
-                                string tag = i == 0 ? "active" : "";
+                                @for (int i = 0; i < item.Option.Images.Count; i++)
+                                {
+                                    string tag = i == 0 ? "active" : "";
 
-                                <div class="carousel-item @tag w-100 h-100">
-                                    <img class="w-100 h-100" src="@item.Option.Images[i].Uri">
+                                    <div class="carousel-item @tag w-100 h-100">
+                                        <img class="w-100 h-100" src="@item.Option.Images[i].Uri">
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="carousel-item active">
+                                    <img class="w-100 h-100" src="/img/placeholder.svg">
                                 </div>
                             }
-                        }
-                        else
-                        {
-                            <div class="carousel-item active">
-                                <img class="w-100 h-100" src="/img/placeholder.svg">
-                            </div>
-                        }
+                        </div>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-@(carouselIndex++)" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
                     </div>
-                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-@(carouselIndex++)" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
+                </div>
+
+                <div class="col-md-9 p-4">
+                    <div class="row">
+                        <div class="col-8">
+                            <p>@item.Option.Name</p>
+                            @if (item.Option.Description != null && item.Option.Description.Length > 0)
+                            {
+                                <p>@item.Option.Description</p>
+                            }
+                            <p>from @item.StartDate.ToShortDateString() to @item.EndDate.ToShortDateString()</p>
+                        </div>
+                        <div class="col-md-4 justify-content-center">
+                            <div class="row h-100 align-content-center">
+                                <div class="col-auto">
+                                    @(item.Option.Price)$
+                                </div>
+                                <div class="col-auto">
+                                    @Html.ActionLink(
+                                "Open",
+                                "Option",
+                                "Hotels",
+                                new { offerId = item.Option.Offer.Id, optionId = item.Option.Id, isPreview = true },
+                                new { @class="btn btn-dark" })
+                                </div>
+                                <div class="col-auto">
+                                    @Html.ActionLink(
+                                "Cancel",
+                                "VerifyCancel",
+                                "Pay",
+                                new { reservationId = item.Id },
+                                new { @class="btn btn-danger" })
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
+        </section>
+    }
+       
+    @if (Model.Item1.Count() == 0)
+    {
+        <p>Sorry, you haven't booked any lodging yet</p>
+        <a asp-controller="Home" asp-action="Index">Let's start searching!</a>
+    }
+</div>
 
-            <div class="col-md-9 p-4">
-                <div class="row">
-                    <div class="col-8">
-                        <p>@item.Option.Name</p>
-                        @if (item.Option.Description != null && item.Option.Description.Length > 0)
-                        {
-                            <p>@item.Option.Description</p>
-                        }
-                        <p>from @item.StartDate.ToShortDateString() to @item.EndDate.ToShortDateString()</p>
+<div class="my-4">
+    <h3>Trip Reservations</h3>
+    @foreach (var reservation in Model.Item2)
+    {
+        TripOffer item = reservation.TripOffer;
+
+        <section class="my-3 option-section">
+            <div class="row p-3">
+                <div class="col-md-10">
+                    @{
+                        Dictionary<TripType, string> typeToString = new Dictionary<TripType, string>()
+                {
+                {TripType.Plane, "fa-plane"},
+                {TripType.Bus, "fa-bus"},
+                {TripType.Water, "fa-ship"},
+                {TripType.Suburban, "fa-train"},
+                {TripType.Train, "fa-train"},
+                {TripType.Helicopter, "fa-helicopter"}
+                };
+
+                        string faTag = typeToString[item.TripThread.Type];
+                    }
+                    <p style="font-weight: bold; font-size: 1.25rem">
+                        <i class="fa @faTag fa-lg"></i> @item.TripThread.Name
+                    </p>
+
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <p>@item.DepartureDate</p>
+                            <p>@item.DepartureLocation.Address</p>
+                        </div>
+                        <div class="col-1 p-0">
+                            <i class="fa fa-arrow-right"></i>
+                        </div>
+                        <div class="col-2">
+                            @{
+                                var duration = item.ArrivalDate - item.DepartureDate;
+
+                                string format = duration.Days > 0 ? duration.ToString("d'd'h'h'm'm'") : duration.ToString("h'h 'm'm'");
+                            }
+                            <p>@(format)</p>
+                        </div>
+                        <div class="col-1 p-0">
+                            <i class="fa fa-arrow-right"></i>
+                        </div>
+                        <div class="col-4">
+                            <p>@item.ArrivalDate</p>
+                            <p>@item.ArrivalLocation.Address</p>
+                        </div>
                     </div>
-                    <div class="col-4 justify-content-center">
-                        <div class="row">
+                    <div class="row p-3">
+                        <h6>Reserved @reservation.Passengers.Count() places for:</h6>
+                        <ul class="list-group">
+                            @foreach (var passenger in reservation.Passengers)
+                            {
+                                <li class="list-group-item">@passenger.Name @passenger.Surname (@(ViewBag.DocumentTypesDict[passenger.DocumentType]) required)</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-2 align-content-center">
+                    <div class="row text-center h-100 align-content-lg-center">
+                        @if (item.Price.HasValue)
+                        {
                             <div class="col">
-                                @(item.Option.Price)$
+                                @item.Price RUB
                             </div>
-                            <div class="col">
-                                @Html.ActionLink(
+                        }
+
+                        <div class="col">
+                            <div class="row h-100 align-content-center">
+                                <div class="col-auto p-2">
+                                    @Html.ActionLink(
                                     "Open",
-                                    "Option",
-                                    "Hotels",
-                                    new { offerId = item.Option.Offer.Id, optionId = item.Option.Id, isPreview = true },
-                                    new { @class="btn btn-dark" });
+                                    "Trip",
+                                    "Trip",
+                                    new { item.Id, isPreview = true },
+                                    new { @class="btn btn-dark" })
+                                </div>
+                                <div class="col-auto p-2">
+                                    @Html.ActionLink(
+                                    "Cancel",
+                                    "Cancel",
+                                    "Trip",
+                                new { reservationId = reservation.Id },
+                                    new { @class="btn btn-danger" })
+                                </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
-
             </div>
-        </div>
-    </section>
-}
+        </section>
+    }
+</div>

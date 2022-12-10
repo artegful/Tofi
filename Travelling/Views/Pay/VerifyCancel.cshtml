@@ -1,0 +1,27 @@
+﻿@model Reservation
+@{
+    ViewData["Title"] = $"Cancel {Model.Option.Name}";
+}
+
+<div class="my-3">
+    <div class="row text-center my-5">
+        <h2>Are you sure, you want to cancel?</h2>
+        <h5>
+            from @Model.StartDate.Date.ToString("d")
+            to @Model.StartDate.Date.ToString("d")
+        </h5>
+
+    </div>
+    @await Html.PartialAsync("OptionPartial", Model.Option)
+
+    <div class="row">
+            
+    </div>
+
+    <form asp-action="Cancel" asp-controller="Pay" method="post">
+        <input type="hidden" name="reservationId" value="@Model.Id" />
+        <button type="submit" class="btn btn-danger btn-block mb-4">Cancel</button>
+    </form>
+
+</div>
+

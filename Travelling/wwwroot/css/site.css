@@ -221,3 +221,26 @@ img.offer-image {
 .bl:hover {
     color: black;
 }
+
+.map {
+    min-height: 300px;
+}
+
+.google-map {
+    width: 100%;
+    height: 100%;
+}
+
+.border-between > [class*='col-']:before {
+    background: red;
+    bottom: 0;
+    content: " ";
+    left: 0;
+    position: absolute;
+    width: 1px;
+    top: 0;
+}
+
+.border-between > [class*='col-']:first-child:before {
+    display: none;
+}

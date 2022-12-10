@@ -1,11 +1,11 @@
 ﻿namespace Travelling.Models
 {
-    public class UserViewModel
+    public class User
     {
-        public UserViewModel()
+        public User()
         { }
 
-        public UserViewModel(RegisterModel model)
+        public User(RegisterModel model)
         {
             Email = model.Email;
             Password = model.Password;

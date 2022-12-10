@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Stripe;
 using Travelling.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,7 @@ builder.Services.AddSingleton<GoogleMapsService>();
 builder.Services.AddSingleton<HotelsService>();
 builder.Services.AddSingleton<YandexMapsService>();
 builder.Services.AddSingleton<Database>();
+StripeConfiguration.ApiKey = "sk_test_51MCnEVCjbwlzSwz1ukS6kXYYPyewyl4FiC6qWUDlbnGqmN6LoZO0j07Ssg3GgFPs4s2SlcZxKHHLrBJWDSLhBVZj00mxuxtXrg";
 
 var app = builder.Build();
 

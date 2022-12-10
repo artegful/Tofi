@@ -92,7 +92,7 @@
                 $(info.el).tooltip({ title: info.event.title });
             },
             events: [
-                @foreach (var reservation in Model.Reservations)
+                @foreach (var reservation in Model.VerifiedReservations)
                 {
                     @Html.Raw("{start:\'" + reservation.StartDate.ToString("yyyy-MM-dd") + "\'," + 
                     "end:\'" + reservation.EndDate.ToString("yyyy-MM-dd") + "\'," +
