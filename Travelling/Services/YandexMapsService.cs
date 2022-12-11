@@ -9,6 +9,7 @@ namespace Travelling.Services
     {
         private const string API_KEY = "13ec04bf-ca25-4f6c-9c46-59cd2fb87a1f";
         private const int SEARCH_RADIUS = 50;
+        private const int LIMIT = 20;
 
         private readonly HttpClient client;
         private readonly GoogleMapsService googleMapsService;
@@ -49,7 +50,7 @@ namespace Travelling.Services
                 $"to={arrival.Code}&" +
                 $"date={departureDate.ToString("yyyy-MM-dd")}&" +
                 "format=json&" +
-                "limit=10";
+                $"limit={LIMIT}";
             string jsonResult = await client.GetStringAsync(apiUrl);
             JsonNode root = JsonObject.Parse(jsonResult);
 

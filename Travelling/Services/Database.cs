@@ -22,11 +22,12 @@ namespace Travelling.Services
         public Database(GoogleMapsService googleMapsService)
         {
             builder = new SqlConnectionStringBuilder();
-            builder.DataSource = "34.155.166.253";
-            builder.UserID = "sqlserver";
-            builder.Password = "A~MM(%F9r<->Rc(<";
+            builder.DataSource = "localhost";
+            builder.UserID = "root";
+            builder.Password = "root";
             builder.InitialCatalog = "project";
             builder.MultipleActiveResultSets = true;
+            string deployConnectionString = "Data Source=SQL8003.site4now.net;Initial Catalog=db_a91503_mssql;User Id=db_a91503_mssql_admin;Password=rootroot11;MultipleActiveResultSets=True";
             connection = new SqlConnection(builder.ConnectionString);
             connection.Open();
 
@@ -287,11 +288,10 @@ namespace Travelling.Services
         public async Task<TripThread> GetThread(int id)
         {
             string sql = $@"
-            SELECT [Id]
-                  ,[Name]
+            SELECT [Name]
                   ,[TransportType]
                   ,[ApiId]
-              FROM [dbo].[TripThreads]";
+              FROM [dbo].[TripThreads] where Id = {id}";
 
             SqlCommand command = new SqlCommand(sql, connection);
             using (SqlDataReader reader = await command.ExecuteReaderAsync())
@@ -300,10 +300,10 @@ namespace Travelling.Services
 
                 return new TripThread()
                 {
-                    Id = reader.GetInt32(0),
-                    Name = reader.GetString(1),
-                    Type = (TripType)reader.GetInt32(2),
-                    ApiId = reader.IsDBNull(3) ? null : reader.GetString(3)
+                    Id = id,
+                    Name = reader.GetString(0),
+                    Type = (TripType)reader.GetInt32(1),
+                    ApiId = reader.IsDBNull(2) ? null : reader.GetString(2)
                 };
             }
         }
@@ -511,6 +511,26 @@ SELECT [OwnerId]
             foreach (var passenger in reservation.Passengers)
             {
                 await Save(reservation, passenger);
+            }
+        }
+
+        public async Task CacheCity(string cityName)
+        {
+            string sql = $@"insert into dbo.CachedCities(Name) values ('{cityName.Replace("'\'", "\'\'")}');";
+            
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task<bool> IsCityCached(string name)
+        {
+            string sql = $@"select count(*) from dbo.CachedCities where Name = '{name.Replace("'\'", "\'\'")}'";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                return ((int)await command.ExecuteScalarAsync()) > 0;
             }
         }
 

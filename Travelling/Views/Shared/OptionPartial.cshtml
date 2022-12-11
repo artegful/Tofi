@@ -3,69 +3,48 @@
     Layout = null;
 }
 
-<div class="hotel-header">
-    <h2 class="hotel-name">@Model.Offer.Name</h2>
-    <h2 class="hotel-rating">4.3</h2>
-</div>
-<h2>@Model.Name</h2>
+    <div class="hotel-header">
+        <h2 class="hotel-name">@Model.Name (@Model.Offer.Name)</h2>
+        <h2 class="hotel-rating">4.3<i class="fa fa-star" aria-hidden="true"></i></h2>
+    </div>
 
-<div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
-    <ol class="carousel-indicators">
-        @if (Model.Images.Count > 0)
-        {
-            @for (int i = 0; i < Model.Images.Count; i++)
-            {
-                if (i == 0)
+    <section class="option-section my-3">
+        <div id="carousel-0" class="carousel slide h-100" data-bs-ride="carousel">
+            <div class="carousel-inner h-100">
+                @if (Model.Images.Count > 0)
                 {
-                    <li data-target="#carouselExampleIndicators" data-slide-to="@i" class="active"></li>
+                    @for (int i = 0; i < Model.Images.Count; i++)
+                    {
+                        string tag = i == 0 ? "active" : "";
+
+                        <div class="carousel-item @tag w-100 h-100" style="object-fit: cover">
+                            <img class="w-100 h-100" src="@Model.Images[i].Uri">
+                        </div>
+                    }
                 }
                 else
                 {
-                    <li data-target="#carouselExampleIndicators" data-slide-to="@i"></li>
+                    <div class="carousel-item active">
+                        <img class="w-100 h-100" src="/img/placeholder.svg">
+                    </div>
                 }
-            }
-        }
-        else
-        {
-            <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
-        }
-    </ol>
-    <div class="carousel-inner">
-        @if (Model.Images.Count > 0)
-        {
-            @for (int i = 0; i < Model.Images.Count; i++)
-            {
-                string tag = i == 0 ? "active" : "";
-
-                <div class="carousel-item @tag">
-                    <img class="d-block w-100" src="@Model.Images[i].Uri">
-                </div>
-            }
-        }
-        else
-        {
-            <div class="carousel-item active">
-                <img class="d-block w-100" src="/img/placeholder.svg">
             </div>
-        }
+            <button class="carousel-control-prev" type="button" data-bs-target="#carousel-0" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Prev</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carousel-0" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </section>
+
+    <div class="option-section my-3">
+        <h3>Details</h3>
+        <p>@Model.Description</p>
+        <h5>Meters</h5>
+        <p>@Model.MetersAmount</p>
+        <h5>Amount of people</h5>
+        <p>@Model.BedsAmount</p>
     </div>
-    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span class="sr-only">Previous</span>
-    </a>
-    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        <span class="sr-only">Next</span>
-    </a>
-</div>
-
-<div class="stats-container">
-    <h3>Details</h3>
-    <p>@Model.Description</p>
-    <h5>Meters</h5>
-    <p>@Model.MetersAmount</p>
-    <h5>Amount of people</h5>
-    <p>@Model.BedsAmount</p>
-</div>
-
-

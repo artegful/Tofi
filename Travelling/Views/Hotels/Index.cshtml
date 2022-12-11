@@ -5,7 +5,7 @@
 
 @addTagHelper *, System.Web.Mvc
 
-<div class="mt-4">
+<div class="mb-4">
     @await Html.PartialAsync("SearchBarAjax", Model)
 </div>
 
@@ -14,7 +14,7 @@
     data-ajax-loading="#loading"
     data-ajax-mode="replace"
     data-ajax-update="#list"
-    href='@Url.Action("Search", "Hotels", new { arriveDate=Model.ArriveDate,
+    href='@Url.Action("Search", "Hotels", new { locationAddress = Model.LocationAddress, arriveDate=Model.ArriveDate,
                                     departureDate = Model.DepartureDate,
                                     amountOfPeople = Model.AmountOfPeople,
                                     pageNumber = ViewBag.PageNumber })'

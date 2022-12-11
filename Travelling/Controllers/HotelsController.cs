@@ -49,20 +49,38 @@ namespace Travelling.Controllers
         {
             (Location, string?) searchLocation = await googleMapsService.GetLocationByAddress(args.LocationAddress);
 
-            Task<List<HousingOffer>> apiOffersTask = hotelsService.GetOffers(searchLocation.Item2);
+            bool isCached = await database.IsCityCached(searchLocation.Item2);
+
+            Task<List<HousingOffer>> apiOffersTask = isCached ? 
+                Task.FromResult<List<HousingOffer>>(new List<HousingOffer>()) : 
+                hotelsService.GetOffers(searchLocation.Item2);
+
             Task<List<HousingOffer>> databaseOffersTask = database.GetHousings();
             Task<List<HousingOffer>> googleOffersTask =
                 googleMapsService.GetResponseForHotelsAroundLocation(searchLocation.Item1)
                 .ContinueWith(data => ParseOffers(data.Result));
 
-            Task.WaitAll(apiOffersTask, googleOffersTask, databaseOffersTask);
+            try
+            {
+                Task.WaitAll(apiOffersTask, googleOffersTask, databaseOffersTask);
+            }
+            catch (AggregateException e)
+            {
+                return Content("An error occured during Search");
+            }
 
             List<HousingOffer> databaseOffers = databaseOffersTask.Result
                 .Where(o => o.GetAvailableOptions(args).Any()).ToList();
             List<HousingOffer> apiOffers = apiOffersTask.Result;
 
             apiOffers.AddRange(googleOffersTask.Result);
-            await database.Save(apiOffers);
+            database.Save(apiOffers);
+
+            if (!isCached)
+            {
+                database.CacheCity(searchLocation.Item2);
+            }
+
             databaseOffers.AddRange(apiOffers);
 
             IEnumerable<HousingOffer> relevantOffers = databaseOffers
@@ -95,6 +113,15 @@ namespace Travelling.Controllers
         {
             HousingOffer offer = (await database.GetHousings()).First(o => o.Id == offerId);
 
+            if (User.Identity?.Name != null)
+            {
+                User user = await database.GetUser(User.Identity.Name);
+
+                if (user.Id == offer.OwnerId)
+                {
+                    return RedirectToAction("OfferControl", "Hotels", new { offerId });
+                }
+            }
 
             foreach (var reservation in offer.Options.SelectMany(option => option.Reservations))
             {
@@ -123,6 +150,16 @@ namespace Travelling.Controllers
             HousingOffer offer = await database.GetOffer(offerId);
             HousingOption option = offer.Options.First(o => o.Id == optionId);
 
+            if (User.Identity?.Name != null)
+            {
+                User user = await database.GetUser(User.Identity.Name);
+
+                if (user.Id == offer.OwnerId)
+                {
+                    return RedirectToAction("OptionControl", "Hotels", new { offerId, optionId });
+                }
+            }
+
             ViewBag.IsPreview = isPreview;
             ViewBag.SearchArgs = args;
             return View((offer, option));
@@ -150,7 +187,7 @@ namespace Travelling.Controllers
 
             if (!option.IsAvailable(args))
             {
-                return RedirectToAction("Error", "Home");
+                throw new ArgumentException("Trying to book a option, that is no longer available");
             }
 
             if (option.Price != 0)
@@ -198,9 +235,9 @@ namespace Travelling.Controllers
             User user = await database.GetUser(User.Identity.Name);
             HousingOffer offer = await database.GetOffer(offerId);
 
-            //if (user.Id != offer.OwnerId)
+            if (user.Id != offer.OwnerId)
             {
-                //return RedirectToAction("Error", "Home");
+                throw new AccessViolationException("Current user is not authorized to edit this offer");
             }
 
             CreateModel model = new CreateModel()

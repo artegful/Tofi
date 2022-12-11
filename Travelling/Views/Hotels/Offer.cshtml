@@ -3,53 +3,56 @@
     ViewData["Title"] = Model.Name;
 }
 
-<div class="row my-5 justify-content-between">
+<div class="row mb-3 justify-content-between">
     <div class="col-8">
         <h2 class="hotel-name">@Model.Name</h2>
         <h6>@Model.Location.Address</h6>
     </div>
     <div class="col-4">
-        <h2 class="hotel-rating">4.3</h2>
+        <h2 class="hotel-rating">4.3<i class="fa fa-star" aria-hidden="true"></i></h2>
     </div>
 </div>
 
-<div class="row my-3">
-    <div class="col-lg">
-        <div id="carousel-0" class="carousel slide h-100" data-bs-ride="carousel">
-            <div class="carousel-inner h-100">
-                @if (Model.Images.Count > 0)
-                {
-                    @for (int i = 0; i < Model.Images.Count; i++)
+<section class="option-section my-3">
+    <div class="row h-100">
+        <div class="col-lg p-0">
+            <div id="carousel-0" class="carousel slide h-100" data-bs-ride="carousel">
+                <div class="carousel-inner h-100">
+                    @if (Model.Images.Count > 0)
                     {
-                        string tag = i == 0 ? "active" : "";
+                        @for (int i = 0; i < Model.Images.Count; i++)
+                        {
+                            string tag = i == 0 ? "active" : "";
 
-                        <div class="carousel-item @tag w-100 h-100" style="object-fit: cover">
-                            <img class="w-100 h-100" src="@Model.Images[i].Uri">
+                            <div class="carousel-item @tag w-100 h-100" style="object-fit: cover">
+                                <img class="w-100 h-100" src="@Model.Images[i].Uri">
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="carousel-item active">
+                            <img class="w-100 h-100" src="/img/placeholder.svg">
                         </div>
                     }
-                }
-                else
-                {
-                    <div class="carousel-item active">
-                        <img class="w-100 h-100" src="/img/placeholder.svg">
-                    </div>
-                }
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carousel-0" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Prev</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carousel-0" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
             </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#carousel-0" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Prev</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#carousel-0" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
+        </div>
+        <div class="col-lg p-0" style="min-height: 300px">
+            <div id="map"></div>
         </div>
     </div>
-    <div class="col-lg" style="min-height: 300px">
-        <div id="map"></div>
-    </div>
-</div>
-   
+
+</section>
+
 @if (Model.Description != null && Model.Description.Length > 0)
 {
     <div class="row my-3">
@@ -64,12 +67,12 @@
     {
         int carouselIndex = 1;
 
-        @foreach (var option in Model.GetAvailableOptions(ViewBag.SearchArgs))
+        @foreach (HousingOption option in Model.GetAvailableOptions(ViewBag.SearchArgs))
         {
             <section class="my-3 option-section">
                 <div class="row h-100">
-                    <div class="col-md-3">
-                        <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
+                    <div class="col-md-4">
+                        <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100 option-carousel" data-bs-ride="carousel">
                             <div class="carousel-inner h-100 w-100">
                                 @if (option.Images.Count > 0)
                                 {
@@ -84,7 +87,7 @@
                                 }
                                 else
                                 {
-                                    <div class="carousel-item active">
+                                    <div class="carousel-item active w-100 h-100">
                                         <img class="w-100 h-100" src="/img/placeholder.svg">
                                     </div>
                                 }
@@ -96,21 +99,25 @@
                         </div>
                     </div>
 
-                    <div class="col-md-9 p-4">
-                        <div class="row">
-                            <div class="col-8">
-                                <p>@option.Name</p>
+                    <div class="col-md-8 px-4 pt-sm-2 pt-md-0">
+                        <div class="row h-100 align-content-center">
+                            <div class="col-4 align-content-center">
+                                <h6>@option.Name</h6>
                                 @if (option.Description != null && option.Description.Length > 0)
                                 {
                                     <p>@option.Description</p>
                                 }
                             </div>
+                            <div class="col-4">
+                                <p class="mb-1">@option.BedsAmount people</p>
+                                <p>@option.MetersAmount m<sup>2</sup></p>
+                            </div>
                             <div class="col-4 justify-content-center">
-                                <div class="row">
-                                    <div class="col">
+                                <div class="row justify-content-end">
+                                    <div class="col-auto">
                                         @(option.Price == 0 ? "Free" : $"{option.Price}$")
                                     </div>
-                                    <div class="col">
+                                    <div class="col-auto">
                                         @Html.ActionLink(
                                             "Book",
                                             "Option",
@@ -119,7 +126,7 @@
                                             arriveDate=ViewBag.SearchArgs.ArriveDate,
                                             departureDate = ViewBag.SearchArgs.DepartureDate,
                                             amountOfPeople = ViewBag.SearchArgs.AmountOfPeople },
-                                            new { @class="btn btn-dark" })
+                                            new { @class="btn btn-dark mx-1" })
                                     </div>
                                 </div>
 

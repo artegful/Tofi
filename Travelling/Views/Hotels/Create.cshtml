@@ -79,6 +79,49 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjMY0DLNSioZkYPBFmFN0lHpR-pQwO0aM&language=en&libraries=places"></script>
 
     <script>
+        var counter = 1;
+
+        function addOption() {
+            var section = document.getElementById("first-option");
+            var newSection = section.cloneNode(true);
+
+            var inputs = newSection.querySelectorAll("input, select, textbox");
+            inputs.forEach(function (input) {
+                var previousName = input.getAttribute('name');
+                input.setAttribute("name", previousName.replace("[0]", "[" + counter + "]"));
+                var previous = input.getAttribute('id');
+                input.setAttribute("id", previous.replace("0", counter));
+            });
+
+            var spans = newSection.querySelectorAll("span");
+            spans.forEach(function (span) {
+                if (span.hasAttribute('data-valmsg-for')) {
+                    var previous = span.getAttribute('data-valmsg-for');
+                    span.setAttribute("data-valmsg-for", previous.replace("0", counter));
+                }
+            });
+
+            var inputs = newSection.querySelectorAll("label");
+            inputs.forEach(function (input) {
+                var previous = input.getAttribute('for');
+                input.setAttribute("for", previous.replace("[0]", "[" + counter + "]"));
+            });
+
+            var container = document.getElementById("option-container");
+            container.appendChild(newSection);
+            counter++;
+        }
+
+        function removeOption() {
+            if (counter <= 1) {
+                return;
+            }
+
+            var container = document.getElementById("option-container");
+            container.removeChild(container.lastChild)
+            counter--;
+        }
+
         const input = document.getElementById("pac-input");
         const options = {
             language: "en",

@@ -21,7 +21,7 @@ namespace Travelling.Controllers
 
         private readonly object Lock = new object();
 
-        private const string SECRET = "whsec_3c2274e8850de40f68647065530e99d2ec169c1d1547e0bb767d63b49c90b79d";
+        private const string SECRET = "whsec_mSEunD1TNNwciTcxwbAP6JdakP45QjQK";
 
         public PayController(Database database)
         {
@@ -39,7 +39,7 @@ namespace Travelling.Controllers
         {
             string dateFormat = "yyyyMMdd";
 
-            string successUrl = "https://" + Request.Host + Url.Action("Success", "Pay");
+            string successUrl = (Request.IsHttps ? "https://" : "http://") + Request.Host + Url.Action("Success", "Pay");
             string failUrl = "https://" + Request.Host + Url.Action("Fail", "Pay");
 
             HousingOffer offer = await database.GetOffer(offerId);
@@ -47,7 +47,7 @@ namespace Travelling.Controllers
 
             if (!option.IsAvailable(args))
             {
-                return RedirectToAction("Error", "Home");
+                throw new ArgumentException("This offer is no longer available");
             }
 
             ProductCreateOptions productOptions = new ProductCreateOptions()
@@ -59,7 +59,7 @@ namespace Travelling.Controllers
             PriceCreateOptions priceOptions = new PriceCreateOptions()
             {
                 Product = product.Id,
-                UnitAmount = (long)option.BookingPrice * 100,
+                UnitAmount = (long)(option.BookingPrice * 100M),
                 Currency = "USD"
             };
             Price price = await priceService.CreateAsync(priceOptions);
@@ -80,7 +80,9 @@ namespace Travelling.Controllers
                 CustomerEmail = User.Identity.Name
             };
 
-            Session session = sessionService.Create(options);
+            Session session = null;
+
+            session = sessionService.Create(options);
 
             Reservation reservation = new Reservation()
             {
@@ -118,7 +120,7 @@ namespace Travelling.Controllers
 
             if (reservation.UserId != (await database.GetUser(User.Identity.Name)).Id)
             {
-                return RedirectToAction("Error", "Home");
+                throw new AccessViolationException("Current user is not authorized to cancel this offer");
             }
 
             if (reservation.SessionId != null)
@@ -142,7 +144,7 @@ namespace Travelling.Controllers
 
             if (offer.OwnerId != user.Id)
             {
-                return RedirectToAction("Error", "Home");
+                throw new AccessViolationException("Current user is not authorized to delete this offer");
             }
 
             foreach (var reservation in offer.Options.SelectMany(o => o.VerifiedReservations).Where(r => r.StartDate < DateTime.Now && r.SessionId != null))
@@ -177,36 +179,24 @@ namespace Travelling.Controllers
                   Request.Headers["Stripe-Signature"],
                   SECRET);
 
-                Session session;
-
-                if (stripeEvent.Type == Events.CheckoutSessionCompleted)
-                {
-                    session = stripeEvent.Data.Object as Session;
-
-                    ProcessVerifiedReservation(session);
-                }
+                Session session = stripeEvent.Data.Object as Session;
 
                 switch (stripeEvent.Type)
                 {
                     case Events.CheckoutSessionCompleted:
-                        session = stripeEvent.Data.Object as Session;
-
                         if (session.PaymentStatus == "paid")
                         {
                             await ProcessVerifiedReservation(session);
                         }
-
                         break;
 
                     case Events.CheckoutSessionAsyncPaymentSucceeded:
-                        session = stripeEvent.Data.Object as Session;
-
                         await ProcessVerifiedReservation(session);
                         break;
 
+                    case Events.CheckoutSessionExpired:
                     case Events.CheckoutSessionAsyncPaymentFailed:
-                        session = stripeEvent.Data.Object as Session;
-
+                        await RemoveExpiredReservation(session);
                         break;
                 }
 
@@ -241,6 +231,19 @@ namespace Travelling.Controllers
 
                 database.Save(notification).Wait();
             }
+        }
+
+        private async Task RemoveExpiredReservation(Session session)
+        {
+            Reservation? reservation = database.GetHousings().Result.SelectMany(h => h.Options)
+              .SelectMany(o => o.Reservations).FirstOrDefault(r => r.SessionId == session.Id);
+
+            if (reservation == null)
+            {
+                return;
+            }
+
+            await database.Delete(reservation);
         }
 
         public IActionResult Success()

@@ -4,19 +4,21 @@
 }
 
 <div class="my-3">
-    @await Html.PartialAsync("OptionPartial", Model.Item2)
+    <div class="container-small">
 
-    @if (!ViewBag.IsPreview)
-    {
-        @Html.ActionLink(
-            $"Book for {Model.Item2.BookingPrice}$",
-            "Checkout",
-            "Pay",
-            new { offerId = Model.Item1.Id, optionId = Model.Item2.Id, arriveDate=ViewBag.SearchArgs.ArriveDate,
-            departureDate = ViewBag.SearchArgs.DepartureDate,
-            amountOfPeople = ViewBag.SearchArgs.AmountOfPeople },
-            new { @class="btn btn-dark" })
-    }
+        @await Html.PartialAsync("OptionPartial", Model.Item2)
 
+        @if (!ViewBag.IsPreview)
+        {
+            @Html.ActionLink(
+                $"Book for {Model.Item2.BookingPrice}$",
+                "Book",
+                "Hotels",
+                new { offerId = Model.Item1.Id, optionId = Model.Item2.Id, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                departureDate = ViewBag.SearchArgs.DepartureDate,
+                amountOfPeople = ViewBag.SearchArgs.AmountOfPeople },
+                new { @class="btn btn-dark" })
+        }
+    </div>
 </div>
 

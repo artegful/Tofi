@@ -15,7 +15,7 @@ namespace Travelling.Services
 
     public class HotelsService
     {
-        private const string API_KEY = "113d895397msh5607d73c9657054p19a663jsn9e60cab86722";
+        private const string API_KEY = "fcb6bb651amsh6f700808c3008c6p13e09fjsnef1694a1b822";
 
         private readonly HttpClient httpClient;
         private readonly Database database;

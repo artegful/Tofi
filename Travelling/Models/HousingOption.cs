@@ -16,7 +16,7 @@
 
         public IEnumerable<Reservation> VerifiedReservations => Reservations.Where(r => r.IsVerified);
 
-        public decimal BookingPrice => Math.Max(0.5M, Price / 50);
+        public decimal BookingPrice => Math.Max(0.99M, Price / 50);
 
         public bool IsAvailable(SearchArgs args)
         {

@@ -4,7 +4,7 @@
 
 @model Travelling.Models.LoginModel
 
-<div class="my-4">
+<div class="container-xsmall">
     <form asp-action="Login" asp-controller="Account" asp-anti-forgery="true">
         <div class="validation" asp-validation-summary="ModelOnly"></div>
         <h2>Login</h2>
@@ -19,7 +19,7 @@
         </div>
 
         <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
-        <button type="submit" class="btn btn-primary btn-block mb-4">Login</button>
+        <button type="submit" class="btn btn-dark btn-block mb-4">Login</button>
 
         <div class="text-center">
             <p>Not a member? <a asp-controller="Account" asp-action="Register">Register</a></p>

@@ -26,7 +26,7 @@ namespace Travelling.Controllers
             return View(args);
         }
 
-        public async Task<IActionResult> Search([FromQuery] TripSearchArgs args, int pageNumber = 1, SortType sortType = SortType.Distance)
+        public async Task<IActionResult> Search([FromQuery] TripSearchArgs args, int pageNumber = 1, SortType sortType = SortType.Price)
         {
             IEnumerable<TripOffer> offers = new List<TripOffer>();
 
@@ -43,7 +43,7 @@ namespace Travelling.Controllers
                 await Task.WhenAll(departureClosestSettlementTask, arrivalClosestSettlementTask);
 
                 offers = (await yandexMapsService.GetTripOffers(departureClosestSettlementTask.Result,
-                    arrivalClosestSettlementTask.Result, args.DepartureDate)).ToList();
+                    arrivalClosestSettlementTask.Result, args.DepartureDate)).Where(o => o.DepartureDate > DateTime.Now).ToList();
 
                 await database.Save(offers);
 
@@ -63,13 +63,14 @@ namespace Travelling.Controllers
                 ViewBag.Page = page;
                 ViewBag.PageNumber = pageNumber;
                 ViewBag.SortType = sortType;
+                ViewBag.Args = args;
 
                 offers = offers.Skip((pageNumber - 1) * ITEMS_ON_PAGE).Take(ITEMS_ON_PAGE);
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.Write(ex.Message);
+                return Content("Nothing found");
             }
 
             return View(offers);
@@ -101,7 +102,7 @@ namespace Travelling.Controllers
 
                 if (offer.DepartureDate < DateTime.Now)
                 {
-                    return RedirectToAction("Error", "Home");
+                    return Content("Sorry, this Trip already happened");
                 }
 
                 TripReservation reservation = new TripReservation()
@@ -128,7 +129,7 @@ namespace Travelling.Controllers
 
             if (user.Id != reservation.Owner.Id)
             {
-                return RedirectToAction("Error", "Home");
+                throw new AccessViolationException("Current user is not authorized to cancel this reservation");
             }
 
             await database.EraseTripReservation(reservationId);

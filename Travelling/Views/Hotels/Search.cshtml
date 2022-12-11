@@ -18,34 +18,34 @@
        data-ajax-mode="replace"
        data-ajax-update="#list"
        data-ajax-begin="onBegin"
-       class="btn btn-dark @priceTag"
-       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
-                                        departureDate = ViewBag.SearchArgs.DepartureDate,
-                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
-                                        pageNumber = ViewBag.Page.PageNumber,
-                                        sortType = SortType.Price })'>
-        Price<i class="fa fa-arrow-down" aria-hidden="true"></i>
-    </a>
-    <a data-ajax="true"
-       data-ajax-loading="#loading"
-       data-ajax-mode="replace"
-       data-ajax-update="#list"
-       data-ajax-begin="onBegin"
        class="btn btn-dark @distanceTag"
-       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+       href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
                                         departureDate = ViewBag.SearchArgs.DepartureDate,
                                         amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
                                         pageNumber = ViewBag.Page.PageNumber,
                                         sortType = SortType.Distance })'>
         Distance<i class="fa fa-arrow-down" aria-hidden="true"></i>
     </a>
+    <a data-ajax="true"
+       data-ajax-loading="#loading"
+       data-ajax-mode="replace"
+       data-ajax-update="#list"
+       data-ajax-begin="onBegin"
+       class="btn btn-dark @priceTag"
+       href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = SortType.Price })'>
+        Price<i class="fa fa-arrow-down" aria-hidden="true"></i>
+    </a>
 </div>
 
 @foreach (var item in Model)
 {
     <section class="my-3 hotel-section">
-        <div class="row h-100">
-            <div class="col-md-4">
+        <div class="row h-100 align-content-center">
+            <div class="col-md-4 h-100">
                 <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
                     <div class="carousel-inner h-100 w-100 preview">
                         @if (item.Images.Count > 0)
@@ -66,25 +66,32 @@
                             </div>
                         }
                     </div>
-                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-@(carouselIndex++)" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
+                    @if (item.Images.Count > 1)
+                    {
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-@carouselIndex" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    }
                 </div>
             </div>
 
-            <div class="col-md-8 p-5">
-                <div class="row">
+            @{
+                carouselIndex++;
+            }
+
+            <div class="col-md-8 my-xs-2 px-xs-5 px-4">
+                <div class="row h-100 align-content-center">
                     <div class="col-8">
-                        <p>@item.Name</p>
+                        <h6>@item.Name</h6>
                         <p>@item.Location.Address</p>
                     </div>
-                    <div class="col-4 justify-content-center">
-                        <div class="row">
-                            <div class="col">
+                    <div class="col-4">
+                        <div class="row h-100 justify-content-end align-content-center">
+                            <div class="col-auto">
                                 @(item.Price)$
                             </div>
-                            <div class="col">
+                            <div class="col-auto h-100">
                                 @Html.ActionLink(
                                     "Open",
                                     "Offer",
@@ -116,7 +123,7 @@
        data-ajax-update="#list"
        data-ajax-begin="onBegin"
        class="btn btn-dark @previousTag"
-       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+       href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
                                     departureDate = ViewBag.SearchArgs.DepartureDate,
                                     amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
                                     pageNumber = ViewBag.Page.PageNumber - 1,
@@ -135,7 +142,7 @@
            data-ajax-update="#list"
            data-ajax-begin="onBegin"
            class="btn btn-dark @currentTag"
-           href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+       href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
                                         departureDate = ViewBag.SearchArgs.DepartureDate,
                                         amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
                                         pageNumber = i,
@@ -150,7 +157,7 @@
        data-ajax-update="#list"
        data-ajax-begin="onBegin"
        class="btn btn-dark @nexTag"
-       href='@Url.Action("Search", "Hotels", new { arriveDate=ViewBag.SearchArgs.ArriveDate,
+       href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
                                     departureDate = ViewBag.SearchArgs.DepartureDate,
                                     amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
                                     pageNumber = ViewBag.Page.PageNumber + 1,
