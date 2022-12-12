@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.VisualBasic;
+using Stripe;
 using System;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -144,7 +145,7 @@ namespace Travelling.Services
 
         public async Task<List<HousingOffer>> GetHousings()
         {
-            string sql = "SELECT Id, LocationId, ApiId, Name, Description, OwnerId FROM dbo.HousingOffers";
+            string sql = "SELECT Id, LocationId, Name, Description, OwnerId, Rating, GoogleId FROM dbo.HousingOffers";
             List<HousingOffer> housings = new List<HousingOffer>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
@@ -159,11 +160,12 @@ namespace Travelling.Services
                         {
                             Id = id,
                             LocationId = reader.GetInt32(1),
-                            ApiId = reader.IsDBNull(2) ? null : reader.GetInt64(2),
-                            Name = reader.GetString(3),
-                            Description = reader.IsDBNull(4) ? null : reader.GetString(4),
+                            Name = reader.GetString(2),
+                            Description = reader.IsDBNull(3) ? null : reader.GetString(3),
                             Images = new List<Models.Image>(),
-                            OwnerId = reader.IsDBNull(5) ? null : reader.GetInt32(5)
+                            OwnerId = reader.IsDBNull(4) ? null : reader.GetInt32(4),
+                            Rating = reader.IsDBNull(5) ? null : (float) reader.GetDouble(5),
+                            GoogleId = reader.IsDBNull(6) ? null : reader.GetString(6)
                         };
 
                         housings.Add(offer);
@@ -197,7 +199,7 @@ namespace Travelling.Services
 
         public async Task<HousingOffer> GetOffer(int id)
         {
-            string sql = $"SELECT Id, LocationId, ApiId, Name, Description FROM dbo.HousingOffers where Id={id}";
+            string sql = $"SELECT Id, LocationId, Name, Description FROM dbo.HousingOffers where Id={id}";
 
             HousingOffer result = null;
 
@@ -213,9 +215,8 @@ namespace Travelling.Services
                     {
                         Id = offerId,
                         LocationId = reader.GetInt32(1),
-                        ApiId = reader.IsDBNull(2) ? null : reader.GetInt64(2),
-                        Name = reader.GetString(3),
-                        Description = reader.IsDBNull(4) ? null : reader.GetString(4),
+                        Name = reader.GetString(2),
+                        Description = reader.IsDBNull(3) ? null : reader.GetString(3),
                         Images = new List<Models.Image>()
                     };
                 }
@@ -467,7 +468,9 @@ SELECT [OwnerId]
             string ownerId = offer.OwnerId.HasValue ? offer.OwnerId.ToString() : "NULL";
             string description = offer.Description != null ? $"\'{offer.Description}\'" : "NULL";
 
-            string sql = $"insert into dbo.HousingOffers(Name, LocationId, ApiId, Description, OwnerId) values (\'{name}\', {offer.Location.Id}, {apiId}, {description}, {ownerId}); select scope_identity()";
+            string sql = $"insert into dbo.HousingOffers(Name, LocationId, ApiId, Description, OwnerId, Rating, GoogleId) values " +
+                $"(\'{name}\', {offer.Location.Id}, {apiId}, {description}, {ownerId}, {offer.Rating?.ToString(CultureInfo.InvariantCulture) ?? "NULL"}, {(offer.GoogleId != null ? $"\'{offer.GoogleId}\'" : "NULL")}); " +
+                $"select scope_identity()";
 
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
@@ -1055,7 +1058,7 @@ INSERT INTO [dbo].[PassengerInfos]
             string description = option.Description != null ? $"\'{option.Description.Replace("\'", "\'\'")}\'" : "NULL";
             string apiId = option.ApiId != null ? $"\'{option.ApiId}\'" : "NULL";
 
-            string sql = $"insert into dbo.HousingOptions(ApiId, Name, Description, Price, BedsAmount, MetersAmount, HousingId) values ({apiId}, \'{name}\', {description}, {option.Price}, {option.BedsAmount}, {option.MetersAmount}, {offer.Id}); select scope_identity()";
+            string sql = $"insert into dbo.HousingOptions(ApiId, Name, Description, Price, BedsAmount, MetersAmount, HousingId) values ({apiId}, \'{name}\', {description}, {option.Price.ToString(CultureInfo.InvariantCulture)}, {option.BedsAmount}, {option.MetersAmount}, {offer.Id}); select scope_identity()";
 
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
@@ -1066,6 +1069,21 @@ INSERT INTO [dbo].[PassengerInfos]
             {
                 await SaveOptionImage(option, optionImage);
             }
+        }
+
+
+        public HousingOption Images()
+        {
+            Random random = new Random();
+
+            return new HousingOption()
+            {
+                Name = "Standard",
+                Description = "Our standard room",
+                Price = random.Next(20, 80),
+                BedsAmount = 2,
+                MetersAmount = random.Next(15, 20)
+            };
         }
     }
 

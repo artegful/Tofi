@@ -43,6 +43,28 @@ namespace Travelling.Services
             return await httpClient.GetStringAsync(request);
         }
 
+        public async Task<List<Comment>> GetComments(string googleId)
+        {
+            string request = $@"https://maps.googleapis.com/maps/api/place/details/json?key={apiKey}&place_id={googleId}";
+            string result = await httpClient.GetStringAsync(request);
+
+            JsonArray reviews = (JsonArray)JsonObject.Parse(result)["result"]["reviews"];
+
+            List<Comment> comments = new List<Comment>(reviews.Count);
+            foreach (JsonNode review in reviews)
+            {
+                comments.Add(new Comment()
+                {
+                    Name = (string)review["author_name"],
+                    Content = (string)review["text"],
+                    Rating = (float)review["rating"],
+                    Time = (string)review["relative_time_description"]
+                });
+            }
+
+            return comments;
+        }
+
         public string GetPhotoUrl(string reference)
         {
             string request = @$"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={reference}&key={apiKey}";

@@ -9,7 +9,7 @@
         <h6>@Model.Location.Address</h6>
     </div>
     <div class="col-4">
-        <h2 class="hotel-rating">4.3<i class="fa fa-star" aria-hidden="true"></i></h2>
+        <h2 class="hotel-rating">@(Model.Rating == null ? "-" : Model.Rating.Value)<i class="fa fa-star" aria-hidden="true"></i></h2>
     </div>
 </div>
 
@@ -105,7 +105,7 @@
                                 <h6>@option.Name</h6>
                                 @if (option.Description != null && option.Description.Length > 0)
                                 {
-                                    <p>@option.Description</p>
+                                    <p>@Html.Raw(option.Description)</p>
                                 }
                             </div>
                             <div class="col-4">
@@ -143,6 +143,32 @@
         <h5>Sorry, no booking options are available for this lodging.</h5>
     }
 </div>
+
+@if (Model.Comments != null)
+{
+    <div class="my-3 mb-5">
+        <h3>Comments</h3>
+        @foreach (var comment in Model.Comments)
+        {
+            <section class="option-section my-2 p-3">
+                <div class="row">
+                    <div class="col-auto">
+                        <h6 class="my-0">@comment.Name</h6>
+                    </div>
+                    <div class="col-auto">
+                        @for (int i = 0; i < comment.Rating; i++)
+                        {
+                            <i class="fa fa-star" aria-hidden="true"></i>
+                        }
+                    </div>
+                </div>
+                <p class ="mb-3 opacity-75">@comment.Time</p>
+                <p>@comment.Content</p>
+            </section>
+        }
+    </div>
+}
+
 
 @section Scripts {
     <script>

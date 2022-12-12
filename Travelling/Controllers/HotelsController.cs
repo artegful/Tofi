@@ -45,46 +45,26 @@ namespace Travelling.Controllers
             return View(args);
         }
 
-        public async Task<IActionResult> Search([FromQuery] LocationSearchArgs args, int pageNumber = 1, SortType sortType = SortType.Distance)
+        public async Task<IActionResult> Search([FromQuery] LocationSearchArgs args, int pageNumber = 1, SortType sortType = SortType.Distance, bool searchOnlyPosted = false)
         {
+            IEnumerable<HousingOffer> relevantOffers = null;
             (Location, string?) searchLocation = await googleMapsService.GetLocationByAddress(args.LocationAddress);
 
-            bool isCached = await database.IsCityCached(searchLocation.Item2);
-
-            Task<List<HousingOffer>> apiOffersTask = isCached ? 
-                Task.FromResult<List<HousingOffer>>(new List<HousingOffer>()) : 
-                hotelsService.GetOffers(searchLocation.Item2);
-
-            Task<List<HousingOffer>> databaseOffersTask = database.GetHousings();
-            Task<List<HousingOffer>> googleOffersTask =
-                googleMapsService.GetResponseForHotelsAroundLocation(searchLocation.Item1)
-                .ContinueWith(data => ParseOffers(data.Result));
-
-            try
+            if (searchOnlyPosted)
             {
-                Task.WaitAll(apiOffersTask, googleOffersTask, databaseOffersTask);
+                relevantOffers = (await database.GetHousings()).Where(o => o.OwnerId != null);
             }
-            catch (AggregateException e)
+            else
             {
-                return Content("An error occured during Search");
+                try
+                {
+                    relevantOffers = await GetFromApis(args, searchLocation);
+                }
+                catch (AggregateException e)
+                {
+                    return Content("An error occured during Search");
+                }
             }
-
-            List<HousingOffer> databaseOffers = databaseOffersTask.Result
-                .Where(o => o.GetAvailableOptions(args).Any()).ToList();
-            List<HousingOffer> apiOffers = apiOffersTask.Result;
-
-            apiOffers.AddRange(googleOffersTask.Result);
-            database.Save(apiOffers);
-
-            if (!isCached)
-            {
-                database.CacheCity(searchLocation.Item2);
-            }
-
-            databaseOffers.AddRange(apiOffers);
-
-            IEnumerable<HousingOffer> relevantOffers = databaseOffers
-                .Where(offer => offer.Location.GetDistance(searchLocation.Item1) < searchRadius);
 
             switch (sortType)
             {
@@ -95,9 +75,12 @@ namespace Travelling.Controllers
                 case SortType.Price:
                     relevantOffers = relevantOffers.OrderBy(offer => offer.Price);
                     break;
+
+                case SortType.Rating:
+                    relevantOffers = relevantOffers.OrderBy(offer => offer.Rating);
+                    break;
             }
                 
-
             Page page = new Page(relevantOffers.Count(), pageNumber, resultsOnPage);
 
             IEnumerable<HousingOffer> cutOffers = relevantOffers.Skip((pageNumber - 1) * resultsOnPage).Take(resultsOnPage);
@@ -106,7 +89,40 @@ namespace Travelling.Controllers
             ViewBag.Page = page;
             ViewBag.PageNumber = pageNumber - 1;
             ViewBag.SortType = sortType;
+            ViewBag.SearchOnlyPosted = searchOnlyPosted;
+
             return View(cutOffers);
+        }
+
+        private async Task<IEnumerable<HousingOffer>> GetFromApis(LocationSearchArgs args, (Location, string) searchLocation)
+        {
+            bool isCached = await database.IsCityCached(searchLocation.Item2);
+
+            Task<List<HousingOffer>> apiOffersTask = isCached ?
+                Task.FromResult<List<HousingOffer>>(new List<HousingOffer>()) :
+                hotelsService.GetOffers(searchLocation.Item2);
+
+            Task<List<HousingOffer>> databaseOffersTask = database.GetHousings();
+            Task<List<HousingOffer>> googleOffersTask =
+                googleMapsService.GetResponseForHotelsAroundLocation(searchLocation.Item1)
+                .ContinueWith(data => ParseOffers(data.Result));
+
+            Task.WaitAll(apiOffersTask, googleOffersTask, databaseOffersTask);
+
+            List<HousingOffer> databaseOffers = databaseOffersTask.Result
+                .Where(o => o.GetAvailableOptions(args).Any()).ToList();
+            List<HousingOffer> apiOffers = apiOffersTask.Result;
+
+            apiOffers.AddRange(googleOffersTask.Result);
+            await database.Save(apiOffers);
+
+            if (!isCached)
+            {
+                database.CacheCity(searchLocation.Item2);
+            }
+
+            databaseOffers.AddRange(apiOffers);
+            return databaseOffers.Where(offer => offer.Location.GetDistance(searchLocation.Item1) < searchRadius);
         }
 
         public async Task<IActionResult> Offer(int offerId, [FromQuery] SearchArgs args)
@@ -121,6 +137,11 @@ namespace Travelling.Controllers
                 {
                     return RedirectToAction("OfferControl", "Hotels", new { offerId });
                 }
+            }
+
+            if (offer.GoogleId != null)
+            {
+                offer.Comments = await googleMapsService.GetComments(offer.GoogleId);
             }
 
             foreach (var reservation in offer.Options.SelectMany(option => option.Reservations))
@@ -412,7 +433,9 @@ namespace Travelling.Controllers
                     Location = location,
                     Description = "",
                     Options = new List<HousingOption>(),
-                    Images = new List<Models.Image>()
+                    Images = new List<Models.Image>(),
+                    Rating = (float)result["rating"],
+                    GoogleId = (string)result["place_id"]
                 };
 
                 if (result["photos"] != null)
@@ -426,16 +449,7 @@ namespace Travelling.Controllers
                     });
                 }
 
-                Random random = new Random();
-
-                offer.Options.Add(new HousingOption()
-                {
-                    Name = "Standard",
-                    Description = "Our standard room",
-                    Price = random.Next(20, 80),
-                    BedsAmount = 2,
-                    MetersAmount = random.Next(15, 20)
-                });
+                offer.Options.Add(database.Images());
 
                 offers.Add(offer);
             }

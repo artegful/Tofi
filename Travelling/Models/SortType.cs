@@ -4,6 +4,7 @@
     {
         Distance,
         Price,
-        Time
+        Time,
+        Rating
     }
 }

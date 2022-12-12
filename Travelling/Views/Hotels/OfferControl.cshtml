@@ -9,7 +9,7 @@
         <h6>@Model.Location.Address</h6>
     </div>
     <div class="col-4">
-        <h2 class="hotel-rating">4.3<i class="fa fa-star" aria-hidden="true"></i></h2>
+        <h2 class="hotel-rating">@(Model.Rating == null ? "-" : Model.Rating.Value)<i class="fa fa-star" aria-hidden="true"></i></h2>
     </div>
 </div>
 

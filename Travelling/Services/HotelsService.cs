@@ -226,14 +226,7 @@ namespace Travelling.Services
                 {
                     Random random = new Random();
 
-                    offers[i].Options.Add(new HousingOption()
-                    {
-                        Name = "Standard",
-                        Description = "Our standard room",
-                        Price = random.Next(20, 80),
-                        BedsAmount = 2,
-                        MetersAmount = random.Next(15, 20)
-                    });
+                    offers[i].Options.Add(database.Images());
                 }
                 
                 foreach (var option in options)
@@ -242,29 +235,39 @@ namespace Travelling.Services
                     int beds;
                     float meters;
 
-                    HousingOption resultOption = new HousingOption()
+                    try
                     {
-                        ApiId = (string)option["id"],
-                        Name = (string)option["header"]["text"],
-                        Description = (string)option["description"],
-                        Images = new List<Image>(),
-                        Price = 5M,
-                        BedsAmount = 1,
-                        MetersAmount = 15
-                    };
+                        JsonArray features = (JsonArray)option["features"];
+                        var texts = features.Select(n => (string)n["text"]);
 
-                    JsonArray images = (JsonArray) option["unitGallery"]["gallery"];
-                    resultOption.Images.Capacity = images.Count;
+                        int bedsParsed = int.Parse(texts.First(t => t.Contains("Sleeps")).Split(' ')[1]);
+                        int metersParsed = (int)Math.Floor(float.Parse(texts.First(t => t.Contains("sq")).Split(' ')[0]) / 10.76);
 
-                    foreach (var image in images)
-                    {
-                        resultOption.Images.Add(new Image()
+                        HousingOption resultOption = new HousingOption()
                         {
-                            Uri = (string)image["image"]["url"]
-                        });
-                    }
+                            ApiId = (string)option["id"],
+                            Name = (string)option["header"]["text"],
+                            Description = (string)option["description"],
+                            Images = new List<Image>(),
+                            Price = (decimal)(float)option["ratePlans"][0]["priceDetails"][0]["price"]["total"]["amount"],
+                            BedsAmount = bedsParsed,
+                            MetersAmount = metersParsed
+                        };
 
-                    offers[i].Options.Add(resultOption);
+                        JsonArray images = (JsonArray)option["unitGallery"]["gallery"];
+                        resultOption.Images.Capacity = images.Count;
+
+                        foreach (var image in images)
+                        {
+                            resultOption.Images.Add(new Image()
+                            {
+                                Uri = (string)image["image"]["url"]
+                            });
+                        }
+
+                        offers[i].Options.Add(resultOption);
+                    }
+                    catch { }
                 }
             }
 

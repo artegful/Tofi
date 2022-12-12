@@ -6,7 +6,7 @@
 <div class="container-small">
     <div class="hotel-header">
         <h2 class="hotel-name">@Model.Name (@Model.Offer.Name)</h2>
-        <h2 class="hotel-rating">4.3<i class="fa fa-star" aria-hidden="true"></i></h2>
+        <h2 class="hotel-rating">@(Model.Offer.Rating == null ? "-" : Model.Offer.Rating.Value)<i class="fa fa-star" aria-hidden="true"></i></h2>
     </div>
 
     <section class="option-section my-3">
