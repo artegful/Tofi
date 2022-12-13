@@ -29,7 +29,7 @@ namespace Travelling.Services
             builder.InitialCatalog = "project";
             builder.MultipleActiveResultSets = true;
             string deployConnectionString = "Data Source=SQL8003.site4now.net;Initial Catalog=db_a91503_mssql;User Id=db_a91503_mssql_admin;Password=rootroot11;MultipleActiveResultSets=True";
-            connection = new SqlConnection(builder.ConnectionString);
+            connection = new SqlConnection(deployConnectionString);
             connection.Open();
 
             this.googleMapsService = googleMapsService;
@@ -199,7 +199,7 @@ namespace Travelling.Services
 
         public async Task<HousingOffer> GetOffer(int id)
         {
-            string sql = $"SELECT Id, LocationId, Name, Description FROM dbo.HousingOffers where Id={id}";
+            string sql = $"SELECT LocationId, Name, Description, OwnerId, Rating, GoogleId FROM dbo.HousingOffers where Id={id}";
 
             HousingOffer result = null;
 
@@ -209,14 +209,15 @@ namespace Travelling.Services
                 {
                     reader.Read();
 
-                    int offerId = reader.GetInt32(0);
-
                     result = new HousingOffer()
                     {
-                        Id = offerId,
-                        LocationId = reader.GetInt32(1),
-                        Name = reader.GetString(2),
-                        Description = reader.IsDBNull(3) ? null : reader.GetString(3),
+                        Id = id,
+                        LocationId = reader.GetInt32(0),
+                        Name = reader.GetString(1),
+                        Description = reader.IsDBNull(2) ? null : reader.GetString(2),
+                        OwnerId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                        Rating = reader.IsDBNull(4) ? null : (float)reader.GetFloat(4),
+                        GoogleId = reader.IsDBNull(5) ? null : reader.GetString(5),
                         Images = new List<Models.Image>()
                     };
                 }
@@ -1080,9 +1081,9 @@ INSERT INTO [dbo].[PassengerInfos]
             {
                 Name = "Standard",
                 Description = "Our standard room",
-                Price = random.Next(20, 80),
+                Price = random.Next(50, 150),
                 BedsAmount = 2,
-                MetersAmount = random.Next(15, 20)
+                MetersAmount = random.Next(15, 30)
             };
         }
     }

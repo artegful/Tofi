@@ -186,4 +186,10 @@
             </div>
         </section>
     }
+
+    @if (Model.Item2.Count() == 0)
+    {
+        <p>Sorry, you haven't booked any trips yet</p>
+        <a asp-controller="Home" asp-action="Index">Let's start searching!</a>
+    }
 </div>

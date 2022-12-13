@@ -20,7 +20,7 @@
 
         public bool IsAvailable(SearchArgs args)
         {
-            return Reservations.All(res => res.StartDate >= args.DepartureDate || args.ArriveDate >= res.EndDate);
+            return Reservations.All(res => res.StartDate >= args.DepartureDate || args.ArriveDate >= res.EndDate) && BedsAmount >= args.AmountOfPeople;
         }
     }
 }

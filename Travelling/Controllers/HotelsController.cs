@@ -47,24 +47,28 @@ namespace Travelling.Controllers
 
         public async Task<IActionResult> Search([FromQuery] LocationSearchArgs args, int pageNumber = 1, SortType sortType = SortType.Distance, bool searchOnlyPosted = false)
         {
-            IEnumerable<HousingOffer> relevantOffers = null;
-            (Location, string?) searchLocation = await googleMapsService.GetLocationByAddress(args.LocationAddress);
+            IEnumerable<HousingOffer> relevantOffers;
+            (Location, string?) searchLocation;
 
-            if (searchOnlyPosted)
+            try
             {
-                relevantOffers = (await database.GetHousings()).Where(o => o.OwnerId != null);
-            }
-            else
-            {
-                try
+                searchLocation = await googleMapsService.GetLocationByAddress(args.LocationAddress);
+
+                if (searchOnlyPosted)
+                {
+                    relevantOffers = (await database.GetHousings()).Where(o => o.OwnerId != null)
+                        .Where(offer => offer.Location.GetDistance(searchLocation.Item1) < searchRadius);
+                }
+                else
                 {
                     relevantOffers = await GetFromApis(args, searchLocation);
                 }
-                catch (AggregateException e)
-                {
-                    return Content("An error occured during Search");
-                }
             }
+            catch (AggregateException e)
+            {
+                return Content("An error occured during Search");
+            }
+
 
             switch (sortType)
             {
@@ -181,6 +185,7 @@ namespace Travelling.Controllers
                 }
             }
 
+            option.Offer = offer;
             ViewBag.IsPreview = isPreview;
             ViewBag.SearchArgs = args;
             return View((offer, option));
@@ -434,7 +439,7 @@ namespace Travelling.Controllers
                     Description = "",
                     Options = new List<HousingOption>(),
                     Images = new List<Models.Image>(),
-                    Rating = (float)result["rating"],
+                    Rating = result["rating"] != null ? (float)result["rating"] : null,
                     GoogleId = (string)result["place_id"]
                 };
 

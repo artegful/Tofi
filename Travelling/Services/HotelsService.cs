@@ -42,7 +42,15 @@ namespace Travelling.Services
             using (var response = await httpClient.SendAsync(request))
             {
                 response.EnsureSuccessStatusCode();
-                return await ParseOffers(await response.Content.ReadAsStringAsync());
+
+                try
+                {
+                    return await ParseOffers(await response.Content.ReadAsStringAsync());
+                }
+                catch (Exception)
+                {
+                    return new List<HousingOffer>();
+                }
             }
         }
 
@@ -240,8 +248,8 @@ namespace Travelling.Services
                         JsonArray features = (JsonArray)option["features"];
                         var texts = features.Select(n => (string)n["text"]);
 
-                        int bedsParsed = int.Parse(texts.First(t => t.Contains("Sleeps")).Split(' ')[1]);
-                        int metersParsed = (int)Math.Floor(float.Parse(texts.First(t => t.Contains("sq")).Split(' ')[0]) / 10.76);
+                        int bedsParsed = int.Parse((texts.FirstOrDefault(t => t.Contains("Sleeps")) ?? "s 2").Split(' ')[1]);
+                        int metersParsed = (int)Math.Floor(float.Parse((texts.FirstOrDefault(t => t.Contains("sq")) ?? "20 sq").Split(' ')[0]) / 10.76);
 
                         HousingOption resultOption = new HousingOption()
                         {
