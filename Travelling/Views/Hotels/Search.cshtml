@@ -1,0 +1,239 @@
+﻿@model IEnumerable<Travelling.Models.HousingOffer>
+@{
+    ViewData["Title"] = "Search results";
+    Layout = null;
+}
+
+@{
+    int carouselIndex = 0;
+}
+
+<div class="row justify-content-between">
+    <div class="col-auto">
+        @{
+            string priceTag = ViewBag.SortType == SortType.Price ? "disabled" : "";
+            string distanceTag = ViewBag.SortType == SortType.Distance ? "disabled" : "";
+            string ratingTag = ViewBag.SortType == SortType.Rating ? "disabled" : "";
+
+        }
+        <a data-ajax="true"
+           data-ajax-loading="#loading"
+           data-ajax-mode="replace"
+           data-ajax-update="#list"
+           data-ajax-begin="onBegin"
+           class="btn btn-dark @distanceTag"
+           href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = SortType.Distance,
+                                        searchOnlyPosted = ViewBag.SearchOnlyPosted})'>
+            Distance<i class="fa fa-arrow-down" aria-hidden="true"></i>
+        </a>
+        <a data-ajax="true"
+           data-ajax-loading="#loading"
+           data-ajax-mode="replace"
+           data-ajax-update="#list"
+           data-ajax-begin="onBegin"
+           class="btn btn-dark @priceTag"
+           href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = SortType.Price,
+                                        searchOnlyPosted = ViewBag.SearchOnlyPosted})'>
+            Price<i class="fa fa-arrow-down" aria-hidden="true"></i>
+        </a>
+        <a data-ajax="true"
+           data-ajax-loading="#loading"
+           data-ajax-mode="replace"
+           data-ajax-update="#list"
+           data-ajax-begin="onBegin"
+           class="btn btn-dark @ratingTag"
+           href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = SortType.Rating,
+                                        searchOnlyPosted = ViewBag.SearchOnlyPosted})'>
+            Rating<i class="fa fa-arrow-down" aria-hidden="true"></i>
+        </a>
+    </div>
+    <div class="col-auto">
+        <div class="dropdown">
+          <button class="btn btn-secondary dropdown-toggle btn-dark" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+            Filters
+          </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
+            <li class="px-2">
+                <div class="row">
+                    <div class="col-8">
+                        <label for="only-post" class="dropdown-label">Show only posted</label>
+                    </div>
+                    <div class="col-4">
+                            <a data-ajax="true"
+                               data-ajax-loading="#loading"
+                               data-ajax-mode="replace"
+                               data-ajax-update="#list"
+                               data-ajax-begin="onBegin"
+                               href='@Url.Action("Search", "Hotels", new { locationAddress = ViewBag.SearchArgs.LocationAddress, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                        departureDate = ViewBag.SearchArgs.DepartureDate,
+                                        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                                        pageNumber = ViewBag.Page.PageNumber,
+                                        sortType = ViewBag.SortType,
+                                        searchOnlyPosted = !ViewBag.SearchOnlyPosted })'>
+                                 <input type="checkbox" id="only-post" class="form-check dropdown-label" name="only-post" @(ViewBag.SearchOnlyPosted ? "checked" : "") />
+                            </a>
+                    </div>
+                </div>
+            </li>
+          </ul>
+        </div>
+    </div>
+</div>
+
+@if (Model.Count() > 0)
+{
+    @foreach (var item in Model)
+    {
+        <section class="my-3 hotel-section">
+            <div class="row h-100 align-content-center">
+                <div class="col-md-4 h-100">
+                    <div id="carousel-@carouselIndex" class="carousel slide preview h-100 w-100" data-bs-ride="carousel">
+                        <div class="carousel-inner h-100 w-100 preview">
+                            @if (item.Images.Count > 0)
+                            {
+                                @for (int i = 0; i < item.Images.Count; i++)
+                                {
+                                    string tag = i == 0 ? "active" : "";
+
+                                    <div class="carousel-item @tag w-100 h-100">
+                                        <img class="preview" src="@item.Images[i].Uri">
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="carousel-item active preview">
+                                    <img class="preview" src="/img/placeholder.svg">
+                                </div>
+                            }
+                        </div>
+                        @if (item.Images.Count > 1)
+                        {
+                            <button class="carousel-control-next" type="button" data-bs-target="#carousel-@carouselIndex" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @{
+                    carouselIndex++;
+                }
+
+                <div class="col-md-8 my-xs-2 px-xs-5 px-4">
+                    <div class="row h-100 align-content-center">
+                        <div class="col-8">
+                            <h6>@item.Name</h6>
+                            <p>@item.Location.Address</p>
+                        </div>
+                        <div class="col-4">
+                            <div class="row h-100 justify-content-end align-content-center">
+                                <div class="col-auto">
+                                    @(item.Price)$
+                                </div>
+                                <div class="col-auto h-100">
+                                    @Html.ActionLink(
+                                        "Open",
+                                        "Offer",
+                                        "Hotels",
+                                        new { offerId = item.Id, arriveDate=ViewBag.SearchArgs.ArriveDate,
+                                            departureDate = ViewBag.SearchArgs.DepartureDate,
+                                            amountOfPeople = ViewBag.SearchArgs.AmountOfPeople },
+                                        new { @class="btn btn-dark" })
+                                </div>
+                            </div>
+                
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+
+
+    string previousTag = ViewBag.Page.HasPreviousPage ? "" : "disabled";
+    string nexTag = ViewBag.Page.HasNextPage ? "" : "disabled";
+
+    <div class="text-center mb-2">
+        <a data-ajax="true"
+           data-ajax-loading="#loading"
+           data-ajax-mode="replace"
+           data-ajax-update="#list"
+           data-ajax-begin="onBegin"
+           class="btn btn-dark @previousTag"
+       href='@Url.Action("Search", "Hotels", new
+            {
+                locationAddress = ViewBag.SearchArgs.LocationAddress,
+                arriveDate = ViewBag.SearchArgs.ArriveDate,
+                departureDate = ViewBag.SearchArgs.DepartureDate,
+                amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                pageNumber = ViewBag.Page.PageNumber - 1,
+                sortType = ViewBag.SortType,
+                searchOnlyPosted = ViewBag.SearchOnlyPosted
+            })'>
+            <i class="fa fa-angle-left"></i>
+        </a>
+
+        @for (int i = 1; i <= ViewBag.Page.TotalPages; i++)
+        {
+            string currentTag = i == ViewBag.Page.PageNumber ? "disabled" : "";
+
+            <a data-ajax="true"
+               data-ajax-loading="#loading"
+               data-ajax-mode="replace"
+               data-ajax-update="#list"
+               data-ajax-begin="onBegin"
+               class="btn btn-dark @currentTag"
+       href='@Url.Action("Search", "Hotels", new
+                {
+                    locationAddress = ViewBag.SearchArgs.LocationAddress,
+                    arriveDate = ViewBag.SearchArgs.ArriveDate,
+                    departureDate = ViewBag.SearchArgs.DepartureDate,
+                    amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+                    pageNumber = i,
+                    sortType = ViewBag.SortType,
+                    searchOnlyPosted = ViewBag.SearchOnlyPosted
+                })'>
+                @i
+            </a>
+        }
+
+        <a data-ajax="true"
+           data-ajax-loading="#loading"
+           data-ajax-mode="replace"
+           data-ajax-update="#list"
+           data-ajax-begin="onBegin"
+           class="btn btn-dark @nexTag"
+       href='@Url.Action("Search", "Hotels", new
+    {
+        locationAddress = ViewBag.SearchArgs.LocationAddress,
+        arriveDate = ViewBag.SearchArgs.ArriveDate,
+        departureDate = ViewBag.SearchArgs.DepartureDate,
+        amountOfPeople = ViewBag.SearchArgs.AmountOfPeople,
+        pageNumber = ViewBag.Page.PageNumber + 1,
+        sortType = ViewBag.SortType,
+        searchOnlyPosted = ViewBag.SearchOnlyPosted
+    })'>
+            <i class="fa fa-angle-right"></i>
+        </a>
+    </div>
+}
+else
+{
+    <h5 class="text-center my-5">
+        Nothing found
+    </h5>
+}

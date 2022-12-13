@@ -1,0 +1,186 @@
+﻿@model TripOffer
+@{
+    ViewData["Title"] = Model.TripThread.Name;
+}
+
+
+<section class="my-3 option-section">
+    <div class="row p-3">
+        <div class="col-md-10">
+            @{
+                Dictionary<TripType, string> typeToString = new Dictionary<TripType, string>()
+            {
+            {TripType.Plane, "fa-plane"},
+            {TripType.Bus, "fa-bus"},
+            {TripType.Water, "fa-ship"},
+            {TripType.Suburban, "fa-train"},
+            {TripType.Train, "fa-train"},
+            {TripType.Helicopter, "fa-helicopter"}
+            };
+
+                string faTag = typeToString[Model.TripThread.Type];
+            }
+            <h5>
+                <i class="fa @faTag fa-lg"></i> @(Model.TripThread.Name), @Model.DepartureDate.ToString("dd MMM, ddd")
+            </h5>
+
+            <div class="row mt-3">
+                <div class="col">
+                    <p>@Model.DepartureDate.ToString("dd.MM.yyy H:mm")</p>
+                    <p>@Model.DepartureLocation.Address</p>
+                </div>
+                <div class="col-auto p-0">
+                    <i class="fa fa-arrow-right"></i>
+                </div>
+                <div class="col">
+                    <p>@Model.ArrivalDate.ToString("dd.MM.yyy H:mm")</p>
+                    <p>@Model.ArrivalLocation.Address</p>
+                </div>
+
+                <div class="col-2 p-0">
+                    @{
+                        var duration = Model.ArrivalDate - Model.DepartureDate;
+
+                        string format = duration.Days > 0 ? duration.ToString("d'd'h'h'm'm'") : duration.ToString("h'h 'm'm'");
+                    }
+                    <h6>Duration:</h6>
+                    <p>@(format)</p>
+                </div>
+            </div>
+        </div>
+        @if (Model.Price.HasValue)
+        {
+            <div class="col">
+                @Model.Price RUB
+            </div>
+        }
+    </div>
+</section>
+
+<section class="option-section my-3">
+    <div class="row">
+        <div class="col-sm map p-0">
+            <div class="google-map" id="map1"></div>
+        </div>
+        <div class="col-sm map p-0">
+            <div class="google-map" id="map2"></div>
+        </div>
+    </div>
+</section>
+
+@{
+    int counter = 0;
+}
+
+@if (!ViewBag.IsPreview)
+{
+    PassengersModel passengersModel = ViewBag.PassengersModel as PassengersModel;
+
+    if (passengersModel == null)
+    {
+        passengersModel = new PassengersModel();
+
+        if (ViewBag.User != null)
+        {
+            passengersModel.Passengers.Add(new Passenger()
+            {
+                Name = ViewBag.User.Name,
+                Surname = ViewBag.User.Surname
+            });
+        }
+        else
+        {
+            passengersModel.Passengers.Add(new Passenger());
+        }
+    }
+    counter = passengersModel.Passengers.Count;
+
+    @await Html.PartialAsync("PassengerInfo", passengersModel)
+}
+
+@section Scripts {
+    <script>
+        var counter = @counter;
+
+        function addOption() {
+            var section = document.getElementById("first-pas");
+            var newSection = section.cloneNode(true);
+
+            var inputs = newSection.querySelectorAll("input, select, textbox");
+            inputs.forEach(function (input) {
+                var previousName = input.getAttribute('name');
+                input.setAttribute("name", previousName.replace("[0]", "[" + counter + "]"));
+                var previous = input.getAttribute('id');
+                input.setAttribute("id", previous.replace("0", counter));
+            });
+
+            var spans = newSection.querySelectorAll("span");
+            spans.forEach(function (span) {
+                if (span.hasAttribute('data-valmsg-for')) {
+                    var previous = span.getAttribute('data-valmsg-for');
+                    span.setAttribute("data-valmsg-for", previous.replace("0", counter));
+                }
+            });
+
+            let header = newSection.querySelector(".head");
+            let content = header.innerHTML.replace("1", "" + (counter + 1));;
+            header.innerHTML = content;
+
+            var inputs = newSection.querySelectorAll("label");
+            inputs.forEach(function (input) {
+                var previous = input.getAttribute('for');
+                input.setAttribute("for", previous.replace("[0]", "[" + counter + "]"));
+            });
+
+            var container = document.getElementById("pas-container");
+            container.appendChild(newSection);
+            counter++;
+        }
+
+        function removeOption() {
+            if (counter <= 1) {
+                return;
+            }
+
+            var container = document.getElementById("pas-container");
+            container.removeChild(container.lastChild)
+            counter--;
+        }
+
+
+        function initMap() {
+            let pos = {
+                lat: @Model.DepartureLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                lng: @Model.DepartureLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+
+            let map = new google.maps.Map(document.getElementById("map1"), {
+                center: pos,
+                zoom: 13,
+            });
+
+            new google.maps.Marker({
+                position: pos,
+                map,
+                title: "@Html.Raw(Model.DepartureLocation.Address)",
+            });
+
+            let pos2 = {
+                lat: @Model.ArrivalLocation.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                lng: @Model.ArrivalLocation.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+
+            map = new google.maps.Map(document.getElementById("map2"), {
+                center: pos2,
+                zoom: 13,
+            });
+
+            new google.maps.Marker({
+                position: pos2,
+                map,
+                title: "@Html.Raw(Model.DepartureLocation.Address)",
+            });
+        }
+
+        window.initMap = initMap;
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjMY0DLNSioZkYPBFmFN0lHpR-pQwO0aM&callback=initMap" async></script>
+}

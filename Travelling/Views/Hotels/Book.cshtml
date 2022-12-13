@@ -1,0 +1,14 @@
+﻿@{
+}
+
+<div class="row my-3 text-center">
+    <h2 class="mb-5">Reservation successfully created!</h2>
+
+    @Html.ActionLink(
+        "See your reservations",
+        "Reservations",
+        "Account",
+        new { },
+        new { @class="btn btn-dark" })
+</div>
+

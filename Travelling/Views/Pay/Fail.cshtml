@@ -1,0 +1,15 @@
+﻿@{
+    ViewData["Title"] = "Success checkout";
+}
+
+
+<div class="container my-5 text-center">
+    <p>Forgot to add something? Find the best lodging for you and come back to book</p>
+    @Html.ActionLink(
+    "Start searching",
+    "Index",
+    "Hotels",
+    new { },
+    new { @class="btn btn-dark my-5" })
+</div>
+

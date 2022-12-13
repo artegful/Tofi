@@ -1,0 +1,43 @@
+﻿@model Travelling.Models.LocationSearchArgs
+@{
+    ViewData["Title"] = "Search results";
+}
+
+@addTagHelper *, System.Web.Mvc
+
+<div class="mb-4">
+    @await Html.PartialAsync("SearchBarAjax", Model)
+</div>
+
+<a 
+    data-ajax="true"
+    data-ajax-loading="#loading"
+    data-ajax-mode="replace"
+    data-ajax-update="#list"
+    href='@Url.Action("Search", "Hotels", new { locationAddress = Model.LocationAddress, arriveDate=Model.ArriveDate,
+                                    departureDate = Model.DepartureDate,
+                                    amountOfPeople = Model.AmountOfPeople,
+                                    pageNumber = ViewBag.PageNumber })'
+    id="ajax-link">
+</a>
+
+<div id="loading" style="display: none" class="row justify-content-center my-5 p-0">
+    <img src="https://i.gifer.com/origin/b4/b4d657e7ef262b88eb5f7ac021edda87.gif" class="loader"/>
+</div>
+
+<div id="list">
+</div>
+
+@section Scripts {
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjMY0DLNSioZkYPBFmFN0lHpR-pQwO0aM&language=en&libraries=places"></script>
+    <script src="/js/site.js"></script>
+    <script>
+        var invisibleLink = document.getElementById("ajax-link");
+        invisibleLink.click();
+
+        function onBegin() {
+            var list = document.getElementById("list");
+            list.innerHTML = "";
+        }
+    </script>
+}

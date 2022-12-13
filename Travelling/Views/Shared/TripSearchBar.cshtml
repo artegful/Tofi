@@ -1,0 +1,22 @@
+﻿@model Travelling.Models.TripSearchArgs
+
+<form asp-action="Index" asp-controller="Trip" method="get">
+    <div class="row mx-lg-auto">
+        <div class="col-lg-4 px-lg-0 my-2">
+            <input class="form-control" type="text" asp-for="DepartureLocation" id="departure-input" style="width: 100%" placeholder="From where?">
+        </div>
+        <div class="col-lg-4 px-lg-0 my-2">
+            <input class="form-control" type="text" asp-for="ArriveLocation" id="arrive-input" style="width: 100%" placeholder="Where to?">
+        </div>
+        <div class="col-lg-3 px-lg-0 my-2">
+            <input class="form-control" type="date" asp-for="DepartureDate" placeholder="When leaving?">
+        </div>
+        <div class="col-lg-1 px-lg-0 my-2">
+            <button type="submit" class="btn btn-dark btn-sm btn-block" style="width: 100%; height: 100%">Search</button>
+        </div>
+    </div>
+
+    <span asp-validation-for="DepartureLocation" />
+    <span asp-validation-for="ArriveLocation" />
+    <span asp-validation-for="DepartureDate" />
+</form>
