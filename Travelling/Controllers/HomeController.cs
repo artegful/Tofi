@@ -82,6 +82,8 @@ namespace Travelling.Controllers
 
             IEnumerable<Reservation> notSeenReservations = database.FilterReservations(reservations);
             ViewBag.NotifiedReservations = notSeenReservations;
+
+            ViewBag.IsAdmin = user.IsAdmin;
         }
 
     }
