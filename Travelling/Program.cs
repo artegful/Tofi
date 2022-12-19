@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Stripe;
+using Travelling.Middleware;
 using Travelling.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,11 +12,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.LoginPath = new PathString("/Account/Login");
 });
 
-builder.Services.AddSingleton<GoogleMapsService>();
+GoogleMapsService googleMapsService = new GoogleMapsService();
+Database database = new Database(googleMapsService);
+
+builder.Services.AddSingleton(googleMapsService);
 builder.Services.AddSingleton<HotelsService>();
 builder.Services.AddSingleton<YandexMapsService>();
-builder.Services.AddSingleton<Database>();
+builder.Services.AddSingleton(database);
+
 StripeConfiguration.ApiKey = "sk_test_51MCnEVCjbwlzSwz1ukS6kXYYPyewyl4FiC6qWUDlbnGqmN6LoZO0j07Ssg3GgFPs4s2SlcZxKHHLrBJWDSLhBVZj00mxuxtXrg";
+builder.Logging.AddProvider(new LoggerProvider(database));
 
 var app = builder.Build();
 
@@ -37,5 +43,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.Run();

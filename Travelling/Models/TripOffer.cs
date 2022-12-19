@@ -9,6 +9,7 @@
         public DateTime ArrivalDate { get; set; }
         public decimal? Price { get; set; }
         public TripThread TripThread { get; set; }
+        public List<TripReservation> Reservations { get; set; }
     }
 
     public enum TripType

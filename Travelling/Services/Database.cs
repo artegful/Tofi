@@ -1,13 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.VisualBasic;
-using Stripe;
-using System;
 using System.Data.SqlClient;
 using System.Globalization;
-using System.Net;
-using System.Reflection;
-using System.Threading;
-using System.Xml.Linq;
 using Travelling.Models;
 
 namespace Travelling.Services
@@ -28,7 +21,7 @@ namespace Travelling.Services
             builder.Password = "root";
             builder.InitialCatalog = "project";
             builder.MultipleActiveResultSets = true;
-            string deployConnectionString = "Data Source=SQL8003.site4now.net;Initial Catalog=db_a91503_mssql;User Id=db_a91503_mssql_admin;Password=rootroot11;MultipleActiveResultSets=True";
+            string deployConnectionString = "Data Source=SQL8002.site4now.net;Initial Catalog=db_a91503_mssql;User Id=db_a91503_mssql_admin;Password=rootroot11;MultipleActiveResultSets=True";
             connection = new SqlConnection(deployConnectionString);
             connection.Open();
 
@@ -38,7 +31,7 @@ namespace Travelling.Services
 
         public async Task<List<User>> GetUsers()
         {
-            string sql = "Select Id, Email, Password, Name, Surname, Phone from dbo.Users";
+            string sql = "Select dbo.Users.Id, Email, Password, Name, Surname, Phone, dbo.Admins.Id from dbo.Users left join dbo.Admins on dbo.Admins.Id = dbo.Users.Id";
             List<User> result = new List<User>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
@@ -54,7 +47,8 @@ namespace Travelling.Services
                             Password = reader.GetString(2),
                             Name = reader.GetString(3),
                             Surname = reader.GetString(4),
-                            Phone = reader.GetString(5)
+                            Phone = reader.GetString(5),
+                            IsAdmin = !reader.IsDBNull(6)
                         };
 
                         result.Add(offer);
@@ -67,7 +61,19 @@ namespace Travelling.Services
 
         public async Task<User> GetUser(string email)
         {
-            string sql = $"Select Id, Email, Password, Name, Surname, Phone from dbo.Users where Email=\'{email}\'";
+            string selectSql = $"select count(*) from dbo.Users where Email=\'{email}\'";
+
+            using (SqlCommand countCommand = new SqlCommand(selectSql, connection))
+            {
+                int count = (int)await countCommand.ExecuteScalarAsync();
+
+                if (count == 0)
+                {
+                    return null;
+                }
+            }
+
+            string sql = $"Select dbo.Users.Id, Email, Password, Name, Surname, Phone, dbo.Admins.Id from dbo.Users left join dbo.Admins on dbo.Admins.Id = dbo.Users.Id where Email=\'{email}\'";
             List<User> result = new List<User>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
@@ -83,8 +89,16 @@ namespace Travelling.Services
                         Password = reader.GetString(2),
                         Name = reader.GetString(3),
                         Surname = reader.GetString(4),
-                        Phone = reader.GetString(5)
+                        Phone = reader.GetString(5),
+                        IsAdmin = !reader.IsDBNull(6)
                     };
+
+                    string isAdmin = $"select count(*) from dbo.Admins where Id = {user.Id}";
+
+                    using (SqlCommand isAdminCommand = new SqlCommand(isAdmin, connection))
+                    {
+                        user.IsAdmin = (int)(await isAdminCommand.ExecuteScalarAsync()) > 0;
+                    }
 
                     return user;
                 }
@@ -93,7 +107,21 @@ namespace Travelling.Services
 
         public async Task<User> GetUser(int id)
         {
-            string sql = $"Select Id, Email, Password, Name, Surname, Phone from dbo.Users where Id={id}";
+            string selectSql = $"select count(*) from dbo.Users where Id=\'{id}\'";
+
+            using (SqlCommand countCommand = new SqlCommand(selectSql, connection))
+            {
+                int count = (int)await countCommand.ExecuteScalarAsync();
+
+                if (count == 0)
+                {
+                    return null;
+                }
+            }
+
+            string sql = $"Select dbo.Users.Id, Email, Password, Name, Surname, Phone, dbo.Admins.Id from dbo.Users " +
+                $"left join dbo.Admins on dbo.Admins.Id = dbo.Users.Id where dbo.Users.Id={id}";
+
             List<User> result = new List<User>();
 
             using (SqlCommand command = new SqlCommand(sql, connection))
@@ -109,7 +137,8 @@ namespace Travelling.Services
                         Password = reader.GetString(2),
                         Name = reader.GetString(3),
                         Surname = reader.GetString(4),
-                        Phone = reader.GetString(5)
+                        Phone = reader.GetString(5),
+                        IsAdmin = !reader.IsDBNull(6)
                     };
 
                     return user;
@@ -216,7 +245,7 @@ namespace Travelling.Services
                         Name = reader.GetString(1),
                         Description = reader.IsDBNull(2) ? null : reader.GetString(2),
                         OwnerId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
-                        Rating = reader.IsDBNull(4) ? null : (float)reader.GetFloat(4),
+                        Rating = 4.3f,
                         GoogleId = reader.IsDBNull(5) ? null : reader.GetString(5),
                         Images = new List<Models.Image>()
                     };
@@ -307,6 +336,16 @@ namespace Travelling.Services
                     Type = (TripType)reader.GetInt32(1),
                     ApiId = reader.IsDBNull(2) ? null : reader.GetString(2)
                 };
+            }
+        }
+
+        public async Task Log(int severity, string message)
+        {
+            string sql = $"insert into dbo.Logs(Severity, Message, Time) values ({severity}, \'{message.Replace("\'", "\'\'")}\', \'{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}\');";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
             }
         }
 
@@ -425,33 +464,6 @@ namespace Travelling.Services
             return reservation;
         }
 
-        public async Task<UnverifiedReservation> GetReservationRequest(string sessionId)
-        {
-            string sql = $@"
-SELECT [OwnerId]
-      ,[OptionId]
-      ,[ArriveDate]
-      ,[DepartureDate]
-  FROM [dbo].[UnverifiedReservations] where SessionId='{sessionId}'";
-
-            using (SqlCommand command = new SqlCommand(sql, connection))
-            {
-                using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                {
-                    reader.Read();
-
-                    return new UnverifiedReservation()
-                    {
-                        SessionId = sessionId,
-                        OwnerId = reader.GetInt32(0),
-                        HousingOptionId = reader.GetInt32(1),
-                        StartDate = reader.GetDateTime(2),
-                        EndDate = reader.GetDateTime(3)
-                    };
-                }
-            }
-        }
-
         public async Task Save(IEnumerable<HousingOffer> offers)
         {
             foreach (var offer in offers)
@@ -538,30 +550,6 @@ SELECT [OwnerId]
             }
         }
 
-        public async Task SaveReservationRequest(UnverifiedReservation reservation)
-        {
-            string dateFormat = "yyyy-MM-dd";
-
-            string sql = @$"
-INSERT INTO [dbo].[UnverifiedReservations]
-           ([SessionId]
-           ,[OwnerId]
-           ,[OptionId]
-           ,[ArriveDate]
-           ,[DepartureDate])
-     VALUES
-           ('{reservation.SessionId}'
-           ,{reservation.OwnerId}
-           ,{reservation.HousingOptionId}
-           ,'{reservation.StartDate.ToString(dateFormat)}'
-           ,'{reservation.EndDate.ToString(dateFormat)}')";
-
-            using (SqlCommand command = new SqlCommand(sql, connection))
-            {
-                await command.ExecuteNonQueryAsync();
-            }
-        }
-
         public async Task Save(TripReservation tripReservation, Passenger passenger)
         {
             string dateFormat = "yyyy-MM-d";
@@ -624,6 +612,16 @@ INSERT INTO [dbo].[PassengerInfos]
         public async Task Delete(Reservation reservation)
         {
             string sql = $"delete from dbo.Reservations where id = {reservation.Id}";
+
+            using (SqlCommand command = new SqlCommand(sql, connection))
+            {
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task Delete(User user)
+        {
+            string sql = $"delete from dbo.Users where id = {user.Id}";
 
             using (SqlCommand command = new SqlCommand(sql, connection))
             {

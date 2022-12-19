@@ -84,6 +84,35 @@ namespace Travelling.Controllers
             return View(model);
         }
 
+        [Authorize]
+        public async Task<IActionResult> ManageUsers()
+        {
+            User user = await database.GetUser(User.Identity.Name);
+
+            if (!user.IsAdmin)
+            {
+                throw new AccessViolationException("User is not admin");
+            }
+
+            return View((await database.GetUsers()).Where(user => !user.IsAdmin));
+        }
+
+        [Authorize]
+        public async Task<IActionResult> Delete(int userId)
+        {
+            User user = await database.GetUser(User.Identity.Name);
+            User deletedUser = await database.GetUser(userId);
+
+            if (!user.IsAdmin || deletedUser.IsAdmin)
+            {
+                throw new AccessViolationException("User is not admin");
+            }
+
+            await database.Delete(deletedUser);
+
+            return RedirectToAction("ManageUsers", "Account");
+        }
+
         private async Task Authenticate(string userName)
         {
             var claims = new List<Claim>

@@ -49,6 +49,7 @@
                             {
                                 <p>@item.Option.Description</p>
                             }
+                            <p>from @item.StartDate.ToString("d") to @item.EndDate.ToString("d")</p>
                         </div>
                         <div class="col-3">
                             <p class="mb-1">@item.Option.BedsAmount people</p>
@@ -120,7 +121,7 @@
 
                     <div class="row text-center">
                         <div class="col-4">
-                            <p>@item.DepartureDate</p>
+                            <p>@item.DepartureDate.ToString("d.M.yyy HH:mm")</p>
                             <p>@item.DepartureLocation.Address</p>
                         </div>
                         <div class="col-1 p-0">
@@ -138,7 +139,7 @@
                             <i class="fa fa-arrow-right"></i>
                         </div>
                         <div class="col-4">
-                            <p>@item.ArrivalDate</p>
+                            <p>@item.ArrivalDate.ToString("d.M.yyy HH:mm")</p>
                             <p>@item.ArrivalLocation.Address</p>
                         </div>
                     </div>

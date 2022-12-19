@@ -133,7 +133,7 @@ namespace Travelling.Controllers
         {
             HousingOffer offer = (await database.GetHousings()).First(o => o.Id == offerId);
 
-            if (User.Identity?.Name != null)
+            if (User.Identity.IsAuthenticated)
             {
                 User user = await database.GetUser(User.Identity.Name);
 
