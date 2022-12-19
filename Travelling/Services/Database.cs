@@ -21,8 +21,8 @@ namespace Travelling.Services
             builder.Password = "root";
             builder.InitialCatalog = "project";
             builder.MultipleActiveResultSets = true;
-            string deployConnectionString = "Data Source=SQL8003.site4now.net;Initial Catalog=db_a91503_mssql;User Id=db_a91503_mssql_admin;Password=rootroot11;MultipleActiveResultSets=True";
-            connection = new SqlConnection(builder.ConnectionString);
+            string deployConnectionString = "Data Source=SQL8002.site4now.net;Initial Catalog=db_a91503_mssql;User Id=db_a91503_mssql_admin;Password=rootroot11;MultipleActiveResultSets=True";
+            connection = new SqlConnection(deployConnectionString);
             connection.Open();
 
             this.googleMapsService = googleMapsService;
@@ -107,6 +107,18 @@ namespace Travelling.Services
 
         public async Task<User> GetUser(int id)
         {
+            string selectSql = $"select count(*) from dbo.Users where Id=\'{id}\'";
+
+            using (SqlCommand countCommand = new SqlCommand(selectSql, connection))
+            {
+                int count = (int)await countCommand.ExecuteScalarAsync();
+
+                if (count == 0)
+                {
+                    return null;
+                }
+            }
+
             string sql = $"Select dbo.Users.Id, Email, Password, Name, Surname, Phone, dbo.Admins.Id from dbo.Users " +
                 $"left join dbo.Admins on dbo.Admins.Id = dbo.Users.Id where dbo.Users.Id={id}";
 

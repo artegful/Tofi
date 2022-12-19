@@ -12,7 +12,6 @@
         public int MetersAmount { get; set; }
         public HousingOffer Offer { get; set; }
         public List<Reservation> Reservations { get; set; } = new List<Reservation>();
-        public bool HasIdenticalPendingRequest { get; set; }
 
         public IEnumerable<Reservation> VerifiedReservations => Reservations.Where(r => r.IsVerified);
 
